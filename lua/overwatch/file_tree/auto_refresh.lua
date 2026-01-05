@@ -9,6 +9,7 @@ local submodule_utils = require("overwatch.utils.submodule")
 local timer = nil
 local last_status_hash = nil
 local last_submodule_hash = nil
+local last_head_hash = nil
 local is_running = false
 
 -- Simple hash function for comparing git status output
@@ -28,6 +29,21 @@ local function get_git_status(root_path, callback)
     function(stdout, code)
       if code == 0 then
         callback(stdout)
+      else
+        callback(nil)
+      end
+    end
+  )
+end
+
+-- Get current HEAD commit hash
+local function get_head_hash(root_path, callback)
+  Job.run(
+    { "git", "rev-parse", "HEAD" },
+    { cwd = root_path },
+    function(stdout, code)
+      if code == 0 and stdout then
+        callback(vim.trim(stdout))
       else
         callback(nil)
       end
@@ -80,54 +96,76 @@ local function check_and_refresh()
 
   is_running = true
 
-  get_git_status(root_path, function(status)
-    if not status then
+  -- First check if HEAD has changed (new commits)
+  get_head_hash(root_path, function(current_head)
+    if not current_head then
       is_running = false
       return
     end
 
-    local current_hash = hash_string(status)
-    local status_changed = last_status_hash ~= nil and current_hash ~= last_status_hash
+    local head_changed = last_head_hash ~= nil and current_head ~= last_head_hash
 
-    -- Check submodules if enabled
-    local submodules_config = Config.values.file_tree.submodules or {}
-    if submodules_config.enabled then
-      submodule_utils.get_changed_submodules(root_path, function(submodules)
+    -- If HEAD changed, update the global state which triggers a full refresh via autocmd
+    if head_changed then
+      last_head_hash = current_head
+      is_running = false
+      vim.schedule(function()
+        local state = require("overwatch.state")
+        state.set_commit_base(current_head)
+      end)
+      return
+    end
+
+    last_head_hash = current_head
+
+    -- HEAD hasn't changed, check git status for working directory changes
+    get_git_status(root_path, function(status)
+      if not status then
+        is_running = false
+        return
+      end
+
+      local current_status_hash = hash_string(status)
+      local status_changed = last_status_hash ~= nil and current_status_hash ~= last_status_hash
+
+      -- Check submodules if enabled
+      local submodules_config = Config.values.file_tree.submodules or {}
+      if submodules_config.enabled then
+        submodule_utils.get_changed_submodules(root_path, function(submodules)
+          is_running = false
+
+          local submodule_hash = hash_submodules(submodules)
+          local submodule_changed = last_submodule_hash ~= nil and submodule_hash ~= last_submodule_hash
+
+          -- Trigger refresh if either changed
+          if status_changed or submodule_changed then
+            vim.schedule(function()
+              if tree_state.buffer and vim.api.nvim_buf_is_valid(tree_state.buffer) then
+                local actions = require("overwatch.file_tree.actions")
+                actions.refresh(true) -- force=true to bypass current buffer check
+              end
+            end)
+          end
+
+          last_status_hash = current_status_hash
+          last_submodule_hash = submodule_hash
+        end)
+      else
         is_running = false
 
-        local submodule_hash = hash_submodules(submodules)
-        local submodule_changed = last_submodule_hash ~= nil and submodule_hash ~= last_submodule_hash
-
-        -- Trigger refresh if either changed
-        if status_changed or submodule_changed then
+        -- Trigger refresh if status changed
+        if status_changed then
           vim.schedule(function()
             if tree_state.buffer and vim.api.nvim_buf_is_valid(tree_state.buffer) then
               local actions = require("overwatch.file_tree.actions")
-              actions.refresh(true) -- force=true to bypass current buffer check
-            else
-              vim.api.nvim_echo({{"Auto-refresh: buffer invalid, skipping", "WarningMsg"}}, true, {})
+              actions.refresh(true)
             end
           end)
         end
 
-        last_status_hash = current_hash
-        last_submodule_hash = submodule_hash
-      end)
-    else
-      is_running = false
-
-      -- Trigger refresh if status changed
-      if status_changed then
-        vim.schedule(function()
-          if tree_state.buffer and vim.api.nvim_buf_is_valid(tree_state.buffer) then
-            local actions = require("overwatch.file_tree.actions")
-            actions.refresh()
-          end
-        end)
+        last_status_hash = current_status_hash
       end
-
-      last_status_hash = current_hash
-    end
+    end)
   end)
 end
 
@@ -144,9 +182,17 @@ function M.start()
 
   local interval = config.refresh_interval or 2000
 
-  -- Initialize the hash with current status
+  -- Initialize the hashes with current state
   local tree_state = require("overwatch.file_tree.state")
   if tree_state.root_path then
+    -- Initialize HEAD hash
+    get_head_hash(tree_state.root_path, function(head)
+      if head then
+        last_head_hash = head
+      end
+    end)
+
+    -- Initialize git status hash
     get_git_status(tree_state.root_path, function(status)
       if status then
         last_status_hash = hash_string(status)
@@ -179,6 +225,7 @@ function M.stop()
   end
   last_status_hash = nil
   last_submodule_hash = nil
+  last_head_hash = nil
   is_running = false
 end
 
@@ -186,6 +233,7 @@ end
 function M.reset_cache()
   last_status_hash = nil
   last_submodule_hash = nil
+  last_head_hash = nil
 end
 
 return M
