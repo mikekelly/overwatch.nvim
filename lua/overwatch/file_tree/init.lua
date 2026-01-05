@@ -5,7 +5,49 @@ local FileTree = require("overwatch.file_tree.tree")
 local render = require("overwatch.file_tree.render")
 local actions = require("overwatch.file_tree.actions")
 local tree_auto_refresh = require("overwatch.file_tree.auto_refresh")
+local config = require("overwatch.config")
 local position_cursor_on_first_file
+
+-- Calculate optimal width for the file tree based on content
+local function calculate_tree_width(buf)
+  local width_config = config.values.file_tree.width
+  local min_width = width_config.min
+  local max_percent = width_config.max_percent
+  local padding = width_config.padding
+
+  -- Calculate max width from screen percentage
+  local screen_width = vim.o.columns
+  local max_width = math.floor(screen_width * max_percent / 100)
+
+  -- Find the longest line in the buffer
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local max_line_width = 0
+  for _, line in ipairs(lines) do
+    local display_width = vim.fn.strdisplaywidth(line)
+    if display_width > max_line_width then
+      max_line_width = display_width
+    end
+  end
+
+  -- Calculate optimal width with padding
+  local optimal_width = max_line_width + padding
+
+  -- Clamp between min and max
+  return math.max(min_width, math.min(optimal_width, max_width))
+end
+
+-- Resize the tree window to fit content
+local function resize_tree_window(win, buf)
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return
+  end
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+
+  local width = calculate_tree_width(buf)
+  vim.api.nvim_win_set_width(win, width)
+end
 
 function M.setup()
   vim.api.nvim_create_autocmd("User", {
@@ -118,6 +160,9 @@ function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
         end
       end
 
+      -- Resize window to fit content
+      resize_tree_window(win, buf)
+
       -- Start auto-refresh timer
       tree_auto_refresh.start()
     end)
@@ -204,8 +249,9 @@ function M.show(commit_hash)
     return false
   end -- Exit if buffer creation failed
 
-  -- Create new window for tree
-  vim.cmd("topleft 30vsplit") -- Consider making width configurable
+  -- Create new window for tree with min width (will be resized after content loads)
+  local min_width = config.values.file_tree.width.min
+  vim.cmd("topleft " .. min_width .. "vsplit")
   local tree_win = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(tree_win, tree_buf)
 

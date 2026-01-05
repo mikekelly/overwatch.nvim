@@ -113,6 +113,22 @@ function M.refresh()
     if first_node then
       vim.api.nvim_win_set_cursor(win, { first_line + 1, 0 })
     end
+
+    -- Resize window to fit content
+    local config = require("overwatch.config")
+    local width_config = config.values.file_tree.width
+    local screen_width = vim.o.columns
+    local max_width = math.floor(screen_width * width_config.max_percent / 100)
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local max_line_width = 0
+    for _, line in ipairs(lines) do
+      local display_width = vim.fn.strdisplaywidth(line)
+      if display_width > max_line_width then
+        max_line_width = display_width
+      end
+    end
+    local optimal_width = math.max(width_config.min, math.min(max_line_width + width_config.padding, max_width))
+    vim.api.nvim_win_set_width(win, optimal_width)
   end
 
   local function finish(ok)

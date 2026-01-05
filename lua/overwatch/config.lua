@@ -21,6 +21,11 @@ M.defaults = {
   file_tree = {
     auto_refresh = true, -- Whether to auto-refresh file tree when git status changes
     refresh_interval = 2000, -- Polling interval in milliseconds
+    width = {
+      min = 30, -- Minimum width in columns
+      max_percent = 40, -- Maximum width as percentage of screen width
+      padding = 2, -- Extra padding added to content width
+    },
   },
 }
 
