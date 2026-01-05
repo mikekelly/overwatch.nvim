@@ -6,6 +6,7 @@ local render = require("overwatch.file_tree.render")
 local actions = require("overwatch.file_tree.actions")
 local tree_auto_refresh = require("overwatch.file_tree.auto_refresh")
 local config = require("overwatch.config")
+local submodule_utils = require("overwatch.utils.submodule")
 local position_cursor_on_first_file
 
 -- Calculate optimal width for the file tree based on content
@@ -127,45 +128,60 @@ function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
   render.render_tree(tree, buf)
 
   tree:update_git_status(root_dir, diff_only, commit_ref, function()
-    vim.schedule(function()
-      if not vim.api.nvim_buf_is_valid(buf) then
-        return
-      end
+    -- Function to finish rendering after submodules are fetched (or skipped)
+    local function finish_render()
+      vim.schedule(function()
+        if not vim.api.nvim_buf_is_valid(buf) then
+          return
+        end
 
-      render.render_tree(tree, buf)
+        render.render_tree(tree, buf)
 
-      local win = tree_state.window or global_state.file_tree_win
-      if not win then
-        return
-      end
-      if not vim.api.nvim_win_is_valid(win) then
-        return
-      end
-      vim.api.nvim_set_current_win(win)
-      position_cursor_on_first_file(buf, win)
-      -- Auto-open first file in the tree while keeping focus in the tree window
-      do
-        local first_node
-        local line_count = vim.api.nvim_buf_line_count(buf)
-        local tree_state = require("overwatch.file_tree.state")
-        for i = 3, line_count - 1 do
-          local n = tree_state.line_to_node[i]
-          if n and not n.is_dir then
-            first_node = n
-            break
+        local win = tree_state.window or global_state.file_tree_win
+        if not win then
+          return
+        end
+        if not vim.api.nvim_win_is_valid(win) then
+          return
+        end
+        vim.api.nvim_set_current_win(win)
+        position_cursor_on_first_file(buf, win)
+        -- Auto-open first file in the tree while keeping focus in the tree window
+        do
+          local first_node
+          local line_count = vim.api.nvim_buf_line_count(buf)
+          local ts = require("overwatch.file_tree.state")
+          for i = 3, line_count - 1 do
+            local n = ts.line_to_node[i]
+            if n and not n.is_dir then
+              first_node = n
+              break
+            end
+          end
+          if first_node then
+            actions.open_file_node(first_node)
           end
         end
-        if first_node then
-          actions.open_file_node(first_node)
-        end
-      end
 
-      -- Resize window to fit content
-      resize_tree_window(win, buf)
+        -- Resize window to fit content
+        resize_tree_window(win, buf)
 
-      -- Start auto-refresh timer
-      tree_auto_refresh.start()
-    end)
+        -- Start auto-refresh timer
+        tree_auto_refresh.start()
+      end)
+    end
+
+    -- Check if submodules are enabled
+    local submodules_config = config.values.file_tree.submodules or {}
+    if submodules_config.enabled then
+      submodule_utils.get_changed_submodules(root_dir, function(submodules)
+        tree_state.submodules = submodules or {}
+        finish_render()
+      end)
+    else
+      tree_state.submodules = {}
+      finish_render()
+    end
   end)
 
   return buf

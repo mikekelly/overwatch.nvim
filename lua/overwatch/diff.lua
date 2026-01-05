@@ -3,6 +3,11 @@ local M = {}
 local config = require("overwatch.config")
 local hunk_store = require("overwatch.hunk_store")
 
+-- Ensure ns_id is always valid (fallback if setup not called yet)
+local function get_ns_id()
+  return config.ns_id or vim.api.nvim_create_namespace("overwatch_diff")
+end
+
 -- Parse diff and return a structured representation
 function M.parse_diff(diff_text)
   local lines = vim.split(diff_text, "\n")
@@ -42,7 +47,7 @@ function M.parse_diff(diff_text)
 end
 
 function M.display_deleted_file(buffer, blob_text)
-  local ns_id = config.ns_id
+  local ns_id = get_ns_id()
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
   vim.fn.sign_unplace("overwatch_diff", { buffer = buffer })
 
@@ -73,7 +78,7 @@ function M.display_deleted_file(buffer, blob_text)
 end
 
 function M.display_inline_diff(buffer, hunks)
-  local ns_id = config.ns_id
+  local ns_id = get_ns_id()
 
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
 
@@ -257,7 +262,7 @@ end
 -- Function to check if diff is currently displayed in a buffer
 function M.is_diff_displayed(buffer)
   buffer = buffer or vim.api.nvim_get_current_buf()
-  local ns_id = config.ns_id
+  local ns_id = get_ns_id()
   local marks = vim.api.nvim_buf_get_extmarks(buffer, ns_id, 0, -1, {})
   return #marks > 0
 end

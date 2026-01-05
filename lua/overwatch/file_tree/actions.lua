@@ -27,7 +27,14 @@ local function open_file_node(node)
   -- Open the target buffer in the main window without changing focus
   local target_path = vim.fn.fnameescape(node.path)
   local target_buf_id = vim.fn.bufadd(target_path)
-  vim.fn.bufload(target_buf_id)
+
+  -- If bufload fails (e.g., swap file E325), open normally to trigger Neovim's swap resolution UI
+  local ok, _ = pcall(vim.fn.bufload, target_buf_id)
+  if not ok then
+    vim.api.nvim_set_current_win(win)
+    vim.cmd("edit " .. target_path)
+    return
+  end
 
   if not vim.api.nvim_buf_is_valid(target_buf_id) then
     vim.api.nvim_echo({ { "Failed to load buffer for: " .. node.path, "ErrorMsg" } }, false, {})
@@ -79,8 +86,9 @@ function M.toggle_node()
   open_file_node(node)
 end
 
-function M.refresh()
-  if not is_file_tree_buffer() then
+function M.refresh(force)
+  -- Skip buffer check if force=true (e.g., from auto-refresh)
+  if not force and not is_file_tree_buffer() then
     return
   end
 
@@ -131,12 +139,29 @@ function M.refresh()
     vim.api.nvim_win_set_width(win, optimal_width)
   end
 
+  local function do_render()
+    render.render_tree(tree, buf)
+    vim.schedule(after_render)
+  end
+
   local function finish(ok)
     if not ok then
       return
     end
-    render.render_tree(tree, buf)
-    vim.schedule(after_render)
+
+    -- Fetch submodules if enabled
+    local config = require("overwatch.config")
+    local submodules_config = config.values.file_tree.submodules or {}
+    if submodules_config.enabled then
+      local submodule_utils = require("overwatch.utils.submodule")
+      submodule_utils.get_changed_submodules(root_path, function(submodules)
+        tree_state.submodules = submodules or {}
+        do_render()
+      end)
+    else
+      tree_state.submodules = {}
+      do_render()
+    end
   end
 
   tree:update_git_status(root_path, diff_only, commit_ref, finish)
@@ -330,6 +355,31 @@ function M.move_cursor_file_only(direction, count)
   end
 
   vim.api.nvim_win_set_cursor(0, { current_line + 1, 0 })
+end
+
+-- Open file under cursor and move focus to the buffer
+function M.open_and_focus()
+  if not is_file_tree_buffer() then
+    return
+  end
+
+  local line = vim.api.nvim_win_get_cursor(0)[1] - 1
+  local state = require("overwatch.file_tree.state")
+  local node = state.line_to_node[line]
+
+  if not node or node.is_dir then
+    return
+  end
+
+  -- Open the file first (this keeps focus in tree)
+  open_file_node(node)
+
+  -- Now move focus to the main window
+  local global_state = require("overwatch.state")
+  local win = global_state.get_main_window()
+  if win and vim.api.nvim_win_is_valid(win) then
+    vim.api.nvim_set_current_win(win)
+  end
 end
 
 M.open_file_node = open_file_node -- Expose for use in init.lua

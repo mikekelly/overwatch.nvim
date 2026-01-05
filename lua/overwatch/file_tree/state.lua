@@ -6,6 +6,7 @@ local M = {
   window = nil, -- Window handle for the file tree window
   root_path = nil, -- The root path used to generate the current tree
   diff_only = false, -- Whether the tree is currently showing only diffs
+  submodules = {}, -- Array of submodule data: {path, status, sha, dirty, changed_files, tree}
 }
 
 function M.reset_state()
@@ -16,6 +17,7 @@ function M.reset_state()
   M.window = nil
   M.root_path = nil
   M.diff_only = false
+  M.submodules = {}
 end
 
 return M

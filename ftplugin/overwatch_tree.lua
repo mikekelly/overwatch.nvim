@@ -14,6 +14,9 @@ vim.wo.foldenable = false
 vim.wo.list = false
 vim.wo.wrap = false
 
+-- Set window-local CursorLine highlight (grey background)
+vim.api.nvim_set_hl(0, "CursorLine", { bg = "#3b4261" })
+
 local actions = require('overwatch.file_tree.actions')
 
 -- Navigation keys auto-preview the file (move cursor AND open file)
@@ -47,4 +50,9 @@ end, { noremap = true, silent = true, buffer = true })
 
 vim.keymap.set("n", "l", function()
   actions.toggle_node()
+end, { noremap = true, silent = true, buffer = true })
+
+-- Enter opens file and moves focus to the buffer
+vim.keymap.set("n", "<CR>", function()
+  actions.open_and_focus()
 end, { noremap = true, silent = true, buffer = true })

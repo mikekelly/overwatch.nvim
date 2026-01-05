@@ -64,6 +64,10 @@ function M.render_tree(tree, buffer)
   buffer = buffer or vim.api.nvim_get_current_buf()
   local ns_id = vim.api.nvim_create_namespace("overwatch_file_tree")
 
+  -- Create custom highlight groups (foreground only, no background)
+  vim.api.nvim_set_hl(0, "OverwatchAdd", { fg = "#73daca" })
+  vim.api.nvim_set_hl(0, "OverwatchDelete", { fg = "#f7768e" })
+
   -- Clear buffer and previous state
   vim.bo[buffer].modifiable = true
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
@@ -90,8 +94,6 @@ function M.render_tree(tree, buffer)
 
   local header_lines = {
     "  " .. header_text,
-    "  Help: ? ",
-    "",
   }
 
   -- === Collect, Filter, Group, and Sort Files ===
@@ -114,7 +116,6 @@ function M.render_tree(tree, buffer)
 
     local parts = get_shortened_display_parts(relative_path)
     local shortened_path = parts[1]
-    local filename = parts[2]
     local filename = parts[2]
 
     if not grouped_files[shortened_path] then
@@ -144,9 +145,9 @@ function M.render_tree(tree, buffer)
     end
 
     if changed_count > 0 then
-      status_line = "  Git Repository - Changes (" .. changed_count .. ")"
+      status_line = "  Changes: " .. changed_count
     elseif not tree_state.diff_only then
-      status_line = "  Git Repository - No Changes"
+      status_line = "  No changes"
     end
     -- "No changes to display" handled later if grouped_files is empty in diff_only mode
   else
@@ -158,12 +159,14 @@ function M.render_tree(tree, buffer)
   end
   if status_line ~= "" then
     table.insert(header_lines, status_line)
+    table.insert(header_lines, "") -- gap before files
+  else
+    table.insert(header_lines, "") -- gap before files
   end
 
   -- === Render Lines ===
   local lines = vim.list_extend({}, header_lines) -- Start with header
   local highlights = {}
-  local extmarks = {}
   local current_line = #lines - 1 -- 0-based index for buffer lines
 
   for group_idx, shortened_path in ipairs(group_keys) do
@@ -188,83 +191,189 @@ function M.render_tree(tree, buffer)
       current_line = current_line + 1
       local node = file_info.node
       local indent = is_root_group and "" or "  " -- Indent files under path headers
-      local icon = "" -- File icon
-      local tree_char = icon .. " "
 
       -- Format status indicator
       local status_char = " "
-      local status_hl = "Normal"
-      if node.status and node.status:match("[AM]") then
-        status_char = "M"
-        status_hl = "DiffAdd" -- Use DiffAdd for Modified/Added for visibility
+      local status_hl = nil
+      if node.status and node.status:match("[?]") then
+        status_char = "+" -- new/untracked
+        status_hl = "OverwatchAdd"
+      elseif node.status and node.status:match("[A]") then
+        status_char = "+" -- added/staged
+        status_hl = "OverwatchAdd"
+      elseif node.status and node.status:match("[M]") then
+        status_char = "󰏫" -- modified (white, no highlight)
+        status_hl = nil
       elseif node.status and node.status:match("[D]") then
-        status_char = "D"
-        status_hl = "DiffDelete"
-      elseif node.status and node.status:match("[?]") then
-        status_char = "?"
-        status_hl = "WarningMsg" -- Untracked
+        status_char = "−" -- deleted (minus sign)
+        status_hl = "OverwatchDelete"
       elseif node.status and node.status:match("[R]") then
-        status_char = "R"
-        status_hl = "DiffChange" -- Renamed
+        status_char = "→" -- renamed
+        status_hl = nil
       elseif node.status and node.status:match("[C]") then
-        status_char = "C" -- Committed/Cached status from ls-tree
-        status_hl = "Comment" -- Use a less prominent highlight
+        status_char = "✓" -- committed
+        status_hl = "Comment"
       end
 
-      -- Format line
-      local line_text = "  " .. indent .. tree_char .. file_info.name
+      -- Format line with status icon inline
+      local line_text = "  " .. indent .. status_char .. " " .. file_info.name
       table.insert(lines, line_text)
 
       -- Map line to node
       tree_state.line_to_node[current_line] = node
 
-      -- Apply status highlight as virtual text
-      if status_char ~= " " then
-        table.insert(extmarks, {
+      -- Apply highlight to status icon only
+      if status_hl then
+        local status_start_col = 2 + #indent
+        table.insert(highlights, {
           line = current_line,
-          col = 0, -- Position at the start of the line
-          opts = {
-            virt_text = { { status_char, status_hl } },
-            virt_text_pos = "overlay",
-          },
+          col = status_start_col,
+          length = #status_char,
+          hl_group = status_hl,
         })
       end
-
-      -- Apply highlight to icon
-      local icon_start_col = 2 + #indent -- After initial indent and group indent
-      table.insert(highlights, {
-        line = current_line,
-        col = icon_start_col,
-        length = #icon,
-        hl_group = "Normal", -- Or specific file icon highlight if desired
-      })
-
-      -- Apply highlight to node name
-      local name_start_col = icon_start_col + #tree_char
-      table.insert(highlights, {
-        line = current_line,
-        col = name_start_col,
-        length = #file_info.name,
-        hl_group = "Normal",
-      })
     end
   end
 
-  -- Add "No changes to display" only if in diff_only mode and no files were found
-  if tree_state.diff_only and #all_files == 0 then
-    -- Check if the status line was already added; if so, replace it or add after
-    local status_line_idx = #header_lines -- 1-based index where status *might* be
-    if #lines >= status_line_idx and lines[status_line_idx]:match("Git Repository") then
-      -- If a "No Changes" or similar line exists, we might not need this,
-      -- but let's ensure the specific message is there for diff_only.
-      -- If we are sure no files were added, this message is appropriate.
-      if status_line == "" then -- Only add if no status line was generated
-        table.insert(lines, "  No changes to display")
-        current_line = current_line + 1
-      end
-    elseif #all_files == 0 then -- Add if no files and no status line existed
-      table.insert(lines, "  No changes to display")
+  -- Add "No changes" only if in diff_only mode and no files were found
+  if tree_state.diff_only and #all_files == 0 and status_line == "" then
+    table.insert(lines, "  No changes")
+    current_line = current_line + 1
+  end
+
+  -- === Render Submodules with Changes ===
+  local submodules = tree_state.submodules or {}
+  for _, submodule in ipairs(submodules) do
+    -- Add separator
+    current_line = current_line + 1
+    table.insert(lines, "")
+
+    -- Submodule header with icon
+    local sub_header = "   " .. submodule.path -- nf-cod-folder_library
+    local sub_status_text = ""
+    if submodule.status == "+" then
+      sub_status_text = " (HEAD differs)"
+    elseif submodule.status == "-" then
+      sub_status_text = " (not initialized)"
+    elseif submodule.status == "U" then
+      sub_status_text = " (conflicts)"
+    end
+    sub_header = sub_header .. sub_status_text
+
+    current_line = current_line + 1
+    table.insert(lines, sub_header)
+    table.insert(highlights, {
+      line = current_line,
+      col = 0,
+      length = #sub_header,
+      hl_group = "Directory",
+    })
+
+    -- Changes count for submodule
+    local sub_changed_files = submodule.changed_files or {}
+    local sub_change_count = 0
+    for _ in pairs(sub_changed_files) do
+      sub_change_count = sub_change_count + 1
+    end
+
+    if sub_change_count > 0 then
       current_line = current_line + 1
+      local sub_changes_line = "  Changes: " .. sub_change_count
+      table.insert(lines, sub_changes_line)
+      table.insert(highlights, {
+        line = current_line,
+        col = 0,
+        length = #sub_changes_line,
+        hl_group = "WarningMsg",
+      })
+
+      -- Gap before files
+      current_line = current_line + 1
+      table.insert(lines, "")
+
+      -- Collect and sort submodule files
+      local sub_files = {}
+      local sub_root = tree.root.path .. "/" .. submodule.path
+      local sub_root_len = #sub_root
+
+      for file_path, file_status in pairs(sub_changed_files) do
+        local rel_path = file_path
+        if rel_path:sub(1, sub_root_len) == sub_root then
+          rel_path = rel_path:sub(sub_root_len + 1)
+          if rel_path:sub(1, 1) == "/" then
+            rel_path = rel_path:sub(2)
+          end
+        end
+        table.insert(sub_files, {
+          path = file_path,
+          rel_path = rel_path,
+          status = file_status,
+        })
+      end
+
+      table.sort(sub_files, function(a, b)
+        return a.rel_path < b.rel_path
+      end)
+
+      -- Render submodule files
+      for _, file_info in ipairs(sub_files) do
+        current_line = current_line + 1
+        local display_name = file_info.rel_path
+
+        -- Shorten long paths
+        local parts = get_shortened_display_parts(display_name)
+        if parts[1] ~= "" then
+          display_name = parts[1] .. "/" .. parts[2]
+        else
+          display_name = parts[2]
+        end
+
+        -- Format status indicator
+        local status_char = " "
+        local status_hl = nil
+        if file_info.status and file_info.status:match("[?]") then
+          status_char = "+" -- new/untracked
+          status_hl = "OverwatchAdd"
+        elseif file_info.status and file_info.status:match("[A]") then
+          status_char = "+" -- added/staged
+          status_hl = "OverwatchAdd"
+        elseif file_info.status and file_info.status:match("[M]") then
+          status_char = "󰏫" -- modified (white, no highlight)
+          status_hl = nil
+        elseif file_info.status and file_info.status:match("[D]") then
+          status_char = "−" -- deleted (minus sign)
+          status_hl = "OverwatchDelete"
+        elseif file_info.status and file_info.status:match("[R]") then
+          status_char = "→" -- renamed
+          status_hl = nil
+        end
+
+        local line_text = "  " .. status_char .. " " .. display_name
+        table.insert(lines, line_text)
+
+        -- Create a pseudo-node for the submodule file
+        local Node = require("overwatch.file_tree.node")
+        local sub_file_node = Node.new(display_name, false)
+        sub_file_node.path = file_info.path
+        sub_file_node.status = file_info.status
+        sub_file_node.is_submodule_file = true
+        sub_file_node.submodule_path = submodule.path
+        tree_state.line_to_node[current_line] = sub_file_node
+
+        -- Apply highlight to status icon only
+        if status_hl then
+          table.insert(highlights, {
+            line = current_line,
+            col = 2,
+            length = #status_char,
+            hl_group = status_hl,
+          })
+        end
+      end
+    elseif submodule.status == "+" then
+      -- HEAD differs but no dirty files - just show the header
+      current_line = current_line + 1
+      table.insert(lines, "")
     end
   end
 
@@ -276,30 +385,20 @@ function M.render_tree(tree, buffer)
     vim.api.nvim_buf_add_highlight(buffer, ns_id, hl.hl_group, hl.line, hl.col, hl.col + hl.length)
   end
 
-  -- Apply virtual text extmarks
-  for _, em in ipairs(extmarks) do
-    vim.api.nvim_buf_set_extmark(buffer, ns_id, em.line, em.col, em.opts)
-  end
-
   -- Add highlighting for the main header
   vim.api.nvim_buf_add_highlight(buffer, ns_id, "Title", 0, 0, -1) -- Header path
-  vim.api.nvim_buf_add_highlight(buffer, ns_id, "Comment", 1, 0, -1) -- Help line
 
-  -- Add highlighting for repository status line (adjust index based on header_lines)
-  local status_line_idx_0based = #header_lines - 1 -- 0-based index for buffer lines
-  if #lines > status_line_idx_0based + 1 then -- Check if the line exists
-    local line_content = lines[status_line_idx_0based + 1] -- Get content using 1-based index
-    if line_content then -- Ensure content exists
-      if line_content:match("Changes") then
-        vim.api.nvim_buf_add_highlight(buffer, ns_id, "WarningMsg", status_line_idx_0based, 0, -1)
-      elseif
-        line_content:match("No Changes")
-        or line_content:match("No changes to display")
-        or line_content:match("Directory View")
-        or line_content:match("Empty Directory")
-      then
-        vim.api.nvim_buf_add_highlight(buffer, ns_id, "Comment", status_line_idx_0based, 0, -1)
-      end
+  -- Add highlighting for repository status line (line 1, 0-based)
+  local status_line_content = lines[2] -- 1-based index
+  if status_line_content then
+    if status_line_content:match("Changes: %d") then
+      vim.api.nvim_buf_add_highlight(buffer, ns_id, "WarningMsg", 1, 0, -1)
+    elseif
+      status_line_content:match("No changes")
+      or status_line_content:match("Directory View")
+      or status_line_content:match("Empty Directory")
+    then
+      vim.api.nvim_buf_add_highlight(buffer, ns_id, "Comment", 1, 0, -1)
     end
   end
 

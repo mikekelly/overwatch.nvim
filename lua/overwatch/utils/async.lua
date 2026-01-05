@@ -40,14 +40,20 @@ function M.debounce(func, delay_ms)
     local args = { ... }
 
     if timer then
-      vim.fn.timer_stop(timer)
+      timer:stop()
+      timer:close()
       timer = nil
     end
 
-    timer = vim.defer_fn(function()
+    timer = vim.uv.new_timer()
+    timer:start(delay_ms, 0, vim.schedule_wrap(function()
+      if timer then
+        timer:stop()
+        timer:close()
+        timer = nil
+      end
       func(unpack(args))
-      timer = nil
-    end, delay_ms)
+    end))
   end
 end
 

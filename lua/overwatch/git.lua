@@ -45,7 +45,7 @@ local function write_tmp(content)
 end
 
 local function clear_diff(buf)
-  local ns = Config.ns_id
+  local ns = Config.ns_id or vim.api.nvim_create_namespace("overwatch_diff")
   vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
   vim.fn.sign_unplace("overwatch_diff", { buffer = buf })
   Hunk.clear(buf)

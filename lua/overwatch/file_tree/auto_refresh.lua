@@ -3,10 +3,12 @@ local M = {}
 
 local Job = require("overwatch.utils.job")
 local Config = require("overwatch.config")
+local submodule_utils = require("overwatch.utils.submodule")
 
 -- State
 local timer = nil
 local last_status_hash = nil
+local last_submodule_hash = nil
 local is_running = false
 
 -- Simple hash function for comparing git status output
@@ -31,6 +33,25 @@ local function get_git_status(root_path, callback)
       end
     end
   )
+end
+
+-- Build a hash string from submodule data for change detection
+local function hash_submodules(submodules)
+  if not submodules or #submodules == 0 then
+    return ""
+  end
+  local parts = {}
+  for _, sub in ipairs(submodules) do
+    local sub_str = sub.path .. ":" .. (sub.status or "") .. ":" .. (sub.dirty and "dirty" or "clean")
+    if sub.changed_files then
+      for path, status in pairs(sub.changed_files) do
+        sub_str = sub_str .. ";" .. path .. "=" .. status
+      end
+    end
+    table.insert(parts, sub_str)
+  end
+  table.sort(parts)
+  return table.concat(parts, "|")
 end
 
 -- Check if git status has changed and trigger refresh if needed
@@ -60,26 +81,53 @@ local function check_and_refresh()
   is_running = true
 
   get_git_status(root_path, function(status)
-    is_running = false
-
     if not status then
+      is_running = false
       return
     end
 
     local current_hash = hash_string(status)
+    local status_changed = last_status_hash ~= nil and current_hash ~= last_status_hash
 
-    -- If status changed, trigger refresh
-    if last_status_hash ~= nil and current_hash ~= last_status_hash then
-      vim.schedule(function()
-        -- Double-check tree is still valid before refreshing
-        if tree_state.buffer and vim.api.nvim_buf_is_valid(tree_state.buffer) then
-          local actions = require("overwatch.file_tree.actions")
-          actions.refresh()
+    -- Check submodules if enabled
+    local submodules_config = Config.values.file_tree.submodules or {}
+    if submodules_config.enabled then
+      submodule_utils.get_changed_submodules(root_path, function(submodules)
+        is_running = false
+
+        local submodule_hash = hash_submodules(submodules)
+        local submodule_changed = last_submodule_hash ~= nil and submodule_hash ~= last_submodule_hash
+
+        -- Trigger refresh if either changed
+        if status_changed or submodule_changed then
+          vim.schedule(function()
+            if tree_state.buffer and vim.api.nvim_buf_is_valid(tree_state.buffer) then
+              local actions = require("overwatch.file_tree.actions")
+              actions.refresh(true) -- force=true to bypass current buffer check
+            else
+              vim.api.nvim_echo({{"Auto-refresh: buffer invalid, skipping", "WarningMsg"}}, true, {})
+            end
+          end)
         end
-      end)
-    end
 
-    last_status_hash = current_hash
+        last_status_hash = current_hash
+        last_submodule_hash = submodule_hash
+      end)
+    else
+      is_running = false
+
+      -- Trigger refresh if status changed
+      if status_changed then
+        vim.schedule(function()
+          if tree_state.buffer and vim.api.nvim_buf_is_valid(tree_state.buffer) then
+            local actions = require("overwatch.file_tree.actions")
+            actions.refresh()
+          end
+        end)
+      end
+
+      last_status_hash = current_hash
+    end
   end)
 end
 
@@ -104,6 +152,16 @@ function M.start()
         last_status_hash = hash_string(status)
       end
     end)
+
+    -- Initialize submodule hash if enabled
+    local submodules_config = config.submodules or {}
+    if submodules_config.enabled then
+      submodule_utils.get_changed_submodules(tree_state.root_path, function(submodules)
+        if submodules then
+          last_submodule_hash = hash_submodules(submodules)
+        end
+      end)
+    end
   end
 
   timer = vim.uv.new_timer()
@@ -120,12 +178,14 @@ function M.stop()
     timer = nil
   end
   last_status_hash = nil
+  last_submodule_hash = nil
   is_running = false
 end
 
 -- Reset cached hash (call after manual refresh)
 function M.reset_cache()
   last_status_hash = nil
+  last_submodule_hash = nil
 end
 
 return M

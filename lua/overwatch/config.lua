@@ -26,6 +26,9 @@ M.defaults = {
       max_percent = 40, -- Maximum width as percentage of screen width
       padding = 2, -- Extra padding added to content width
     },
+    submodules = {
+      enabled = true, -- Whether to show submodules with changes
+    },
   },
 }
 

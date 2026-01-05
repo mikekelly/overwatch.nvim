@@ -5,17 +5,23 @@ A Neovim plugin for displaying inline unified diffs directly in your buffer. For
 ## Features
 
 * **Inline Diffs**: View git diffs directly in your buffer, without needing a separate window.
-* **File Tree Explorer**: A file tree explorer is displayed, showing all files that have been changed.
-* **Auto-preview on Navigation**: Moving through files in the tree automatically previews the diff (no need to press `l`).
+* **File Tree Explorer**: A file tree explorer showing changed files with status icons.
+* **Auto-preview on Navigation**: Moving through files in the tree automatically previews the diff.
 * **Auto-refresh File Tree**: The file tree automatically refreshes when git status changes (polls every 2 seconds).
-* **Git Gutter Signs**: Gutter signs are used to indicate added, modified, and deleted lines.
-* **Customizable**: Configure the signs, highlights, and line symbols to your liking.
+* **Submodule Support**: Optionally display changed files in git submodules.
+* **Git Gutter Signs**: Gutter signs indicate added, modified, and deleted lines.
+* **Cursor Line Highlighting**: Grey background highlights the selected line in the file tree.
+* **Customizable**: Configure signs, highlights, and line symbols to your liking.
 * **Auto-refresh Diff**: The diff view automatically refreshes as you make changes to the buffer.
 
 ## What's Different from unified.nvim?
 
 1. **Auto-preview**: `j`/`k` navigation in the file tree automatically opens and previews the file diff
 2. **Auto-refresh file tree**: The file tree polls git status and refreshes when changes are detected
+3. **Submodule support**: Optionally shows changed files within git submodules
+4. **Improved status icons**: Uses visual icons (`+`, `󰏫`, `−`) instead of letters for file status
+5. **Enter to focus**: Press `<CR>` to open a file and move cursor into the main buffer
+6. **Cursor line highlighting**: Selected line in file tree has grey background for visibility
 
 ## Requirements
 
@@ -81,6 +87,9 @@ require('overwatch').setup({
       max_percent = 40, -- Maximum width as percentage of screen width
       padding = 2, -- Extra padding added to content width
     },
+    submodules = {
+      enabled = false, -- Set to true to show changed files in submodules
+    },
   },
 })
 ```
@@ -98,21 +107,21 @@ require('overwatch').setup({
 When the file tree is open, you can use the following keymaps:
 
   * `j`/`k` or `<Down>`/`<Up>`: Move between files and **automatically preview** the diff.
-  * `l`: Explicitly open the file under the cursor (same as moving to it).
+  * `<CR>` (Enter): Open the file and **move cursor into the main buffer**.
+  * `l`: Open the file under the cursor (keeps focus in tree).
   * `q`: Close the file tree window.
   * `R`: Manually refresh the file tree.
   * `?`: Show a help dialog.
 
 When the file tree opens, the first file is automatically opened in the main window.
 
-The file tree displays the Git status of each file:
+The file tree displays the Git status of each file with icons:
 
-  - `M`: Modified
-  - `A`: Added
-  - `D`: Deleted
-  - `R`: Renamed
-  - `C`: Copied
-  - `?`: Untracked
+  - `+` (green): Added or untracked
+  - `󰏫` (white): Modified
+  - `−` (red): Deleted
+  - `→`: Renamed
+  - `✓` (grey): Committed
 
 ### Navigating Hunks
 
