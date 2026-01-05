@@ -1,4 +1,4 @@
--- Minimal Neovim init for unified.nvim tests
+-- Minimal Neovim init for overwatch.nvim tests
 
 -- Keep startup deterministic
 vim.g.mapleader = " "

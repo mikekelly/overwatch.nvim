@@ -1,4 +1,4 @@
--- Test file for unified.nvim rendering features
+-- Test file for overwatch.nvim rendering features
 local M = {}
 
 -- Test that + signs don't appear in the buffer text (only in gutter)
@@ -26,24 +26,24 @@ function M.test_no_plus_signs_in_buffer()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
 
   -- Get buffer and namespace
   local buffer = vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
 
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
 
   -- Check that extmarks for added lines use sign_text and not virt_text
   local found_added_line_sign = false
   local found_added_line_virt_text = false
-  local config = require("unified.config") -- Need config for symbol
+  local config = require("overwatch.config") -- Need config for symbol
   local expected_sign_text = config.values.line_symbols.add .. " "
 
   for _, mark in ipairs(extmarks) do
     local details = mark[4]
-    -- Check if the extmark has the 'UnifiedDiffAdd' highlight group (indicating an added line)
-    if details.line_hl_group == "UnifiedDiffAdd" then
+    -- Check if the extmark has the 'OverwatchDiffAdd' highlight group (indicating an added line)
+    if details.line_hl_group == "OverwatchDiffAdd" then
       -- Check if it has the correct sign_text
       if details.sign_text == expected_sign_text then
         found_added_line_sign = true
@@ -94,12 +94,12 @@ function M.test_deleted_lines_not_duplicated()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(result, "Failed to display diff")
 
   -- Get buffer and namespace
   local buffer = vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
 
   -- Get all buffer lines
   local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
@@ -173,12 +173,12 @@ function M.test_deleted_lines_on_own_line()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(result, "Failed to display diff")
 
   -- Get buffer and namespace
   local buffer = vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
 
   -- Get all extmarks with details
   local extmarks = vim.api.nvim_buf_get_extmarks(buffer, ns_id, 0, -1, { details = true })
@@ -225,27 +225,27 @@ function M.test_deletion_symbols_in_gutter()
   local test_path = utils.create_and_commit_file(repo, test_file, {
     "return {",
     "  plugins = {",
-    "    'axkirillov/unified.nvim',",
+    "    'axkirillov/overwatch.nvim',",
     "    'some/other-plugin',",
     "  },",
     "  config = function()",
-    "    require('unified').setup({})",
+    "    require('overwatch').setup({})",
     "  end",
     "}",
   }, "Initial commit")
 
   -- Open the file and delete a line
   vim.cmd("edit " .. test_path)
-  vim.api.nvim_buf_set_lines(0, 2, 3, false, {}) -- Delete the 'axkirillov/unified.nvim' line
+  vim.api.nvim_buf_set_lines(0, 2, 3, false, {}) -- Delete the 'axkirillov/overwatch.nvim' line
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(result, "Failed to display diff")
 
   -- Get buffer and namespace
   local buffer = vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
 
   -- Get all extmarks with details
   local extmarks = vim.api.nvim_buf_get_extmarks(buffer, ns_id, 0, -1, { details = true })
@@ -327,18 +327,18 @@ function M.test_no_line_numbers_in_deleted_lines()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(result, "Failed to display diff")
 
   -- Get buffer and namespace
   local buffer = vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
 
   -- Get all buffer lines
   local buffer_lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
   local buffer_line_count = #buffer_lines
 
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
 
   -- Check if any virtual text contains line numbers or dash + number patterns
   -- These patterns would indicate the issue where we're seeing "-  11" type formatting
@@ -442,12 +442,12 @@ function M.test_single_deleted_line_element()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(result, "Failed to display diff")
 
   -- Get buffer and namespace
   local buffer = vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
 
   -- Count the number of deleted lines in the diff
   local diff_output = vim.fn.system({ "git", "-C", repo.repo_dir, "diff", "--", test_file })
@@ -461,12 +461,12 @@ function M.test_single_deleted_line_element()
   end
 
   -- Get all signs
-  local signs = vim.fn.sign_getplaced(buffer, { group = "unified_diff" })
+  local signs = vim.fn.sign_getplaced(buffer, { group = "overwatch_diff" })
   local delete_signs_count = 0
 
   if #signs > 0 and #signs[1].signs > 0 then
     for _, sign in ipairs(signs[1].signs) do
-      if sign.name == "unified_diff_delete" then
+      if sign.name == "overwatch_diff_delete" then
         delete_signs_count = delete_signs_count + 1
       end
     end
@@ -536,16 +536,16 @@ function M.test_new_file_shows_all_lines_added()
   vim.cmd("edit " .. new_file_path)
   local buffer = vim.api.nvim_get_current_buf()
 
-  local unified_git = require("unified.git")
-  local success = unified_git.show_git_diff_against_commit(initial_commit_hash, buffer)
+  local overwatch_git = require("overwatch.git")
+  local success = overwatch_git.show_git_diff_against_commit(initial_commit_hash, buffer)
   assert(success, "show_git_diff_against_commit failed for new file")
 
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
 
   local added_lines_count = 0
   for _, mark in ipairs(extmarks) do
     local details = mark[4]
-    if details.line_hl_group == "UnifiedDiffAdd" then
+    if details.line_hl_group == "OverwatchDiffAdd" then
       added_lines_count = added_lines_count + 1
     end
   end

@@ -1,4 +1,4 @@
--- Test runner for unified.nvim
+-- Test runner for overwatch.nvim
 local M = {}
 
 -- Load test modules
@@ -61,8 +61,8 @@ function M.run_all_tests()
   -- Common setup
   local env = test_utils.setup()
 
-  -- Initialize unified plugin
-  require("unified").setup()
+  -- Initialize overwatch plugin
+  require("overwatch").setup()
 
   -- Run all test groups
   local groups = {
@@ -122,7 +122,7 @@ function M.run_all_tests()
   table.insert(lines, '<?xml version="1.0" encoding="UTF-8"?>')
   table.insert(
     lines,
-    string.format('<testsuite name="unified.nvim" tests="%d" failures="%d">', pass_count + fail_count, fail_count)
+    string.format('<testsuite name="overwatch.nvim" tests="%d" failures="%d">', pass_count + fail_count, fail_count)
   )
   for _, r in ipairs(all_results) do
     local group, test = r.name:match("([^%.]+)%.(.+)")
@@ -136,7 +136,7 @@ function M.run_all_tests()
     end
   end
   table.insert(lines, "</testsuite>")
-  vim.fn.writefile(lines, junit_dir .. "/unified.xml")
+  vim.fn.writefile(lines, junit_dir .. "/overwatch.xml")
 
   -- Return success if all tests passed
   return fail_count == 0
@@ -144,7 +144,7 @@ end
 
 -- Main entry point - run all tests
 function M.run()
-  print("Running unified.nvim tests")
+  print("Running overwatch.nvim tests")
 
   -- Run all tests
   local result = M.run_all_tests()
@@ -184,7 +184,7 @@ function M.run_test(test_name)
   end
 
   print("Running test: " .. group_name .. "." .. func_name)
-  require("unified").setup()
+  require("overwatch").setup()
 
   local status, result = pcall(function()
     return group[func_name]()

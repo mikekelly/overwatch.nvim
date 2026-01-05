@@ -1,4 +1,4 @@
--- Test file for multiple line additions in unified.nvim
+-- Test file for multiple line additions in overwatch.nvim
 local M = {}
 
 -- Import test utilities
@@ -26,13 +26,13 @@ function M.test_multiple_added_lines()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(result, "Failed to display diff")
 
   local buffer = vim.api.nvim_get_current_buf()
-  vim.api.nvim_create_namespace("unified_diff")
+  vim.api.nvim_create_namespace("overwatch_diff")
 
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
   -- Track which lines are highlighted (1-indexed for easier comparison with buffer lines)
   local highlighted_lines = {}
   -- Process all extmarks to find which lines have highlighting
@@ -102,12 +102,12 @@ function M.test_multiple_added_lines_with_commit()
   vim.api.nvim_buf_set_lines(0, 1, 1, false, { "new line 1", "new line 2", "new line 3" }) -- Add 3 new lines after line 1
 
   local buffer = vim.api.nvim_get_current_buf()
-  local result = require("unified.git").show_git_diff_against_commit(first_commit, buffer)
+  local result = require("overwatch.git").show_git_diff_against_commit(first_commit, buffer)
   assert(result, "Failed to display diff against first commit")
 
-  vim.api.nvim_create_namespace("unified_diff")
+  vim.api.nvim_create_namespace("overwatch_diff")
 
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
 
   -- Track which lines are highlighted
   local highlighted_lines = {}

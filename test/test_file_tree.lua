@@ -16,7 +16,7 @@ function M.test_file_tree_api()
   vim.cmd("write")
 
   -- Test diff-only mode first
-  local file_tree = require("unified.file_tree")
+  local file_tree = require("overwatch.file_tree")
   local tree_buf = file_tree.create_file_tree_buffer(file_path, true)
   assert(tree_buf and vim.api.nvim_buf_is_valid(tree_buf), "Tree buffer should be created in diff-only mode")
 
@@ -52,7 +52,7 @@ function M.test_file_tree_content()
   end
 
   -- Get the FileTree class from the file_tree module
-  local file_tree = require("unified.file_tree")
+  local file_tree = require("overwatch.file_tree")
 
   -- Create a new tree node directly
   local Node = {}
@@ -184,7 +184,7 @@ function M.test_file_tree_help_dialog()
   vim.cmd("edit " .. file_path)
 
   -- Create a file tree buffer
-  local file_tree = require("unified.file_tree")
+  local file_tree = require("overwatch.file_tree")
   local tree_buf = file_tree.create_file_tree_buffer(file_path, false)
 
   -- Store tree buffer as the current buffer in the tree state

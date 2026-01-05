@@ -3,16 +3,16 @@ local utils = require("test.test_utils")
 local M = {}
 
 function M.test_auto_refresh()
-  local config = require("unified.config")
+  local config = require("overwatch.config")
   assert(config.values.auto_refresh == true, "Auto-refresh should be enabled by default")
 
-  require("unified").setup({ auto_refresh = false })
+  require("overwatch").setup({ auto_refresh = false })
   assert(config.values.auto_refresh == false, "Auto-refresh should be disabled after setup")
 
-  require("unified").setup({ auto_refresh = true })
+  require("overwatch").setup({ auto_refresh = true })
   assert(config.values.auto_refresh == true, "Auto-refresh should be re-enabled after setup")
 
-  require("unified").setup({})
+  require("overwatch").setup({})
 
   return true
 end
@@ -45,17 +45,17 @@ function M.test_diff_against_commit()
   vim.cmd("write")
 
   local buffer = vim.api.nvim_get_current_buf()
-  local result = require("unified.git").show_git_diff_against_commit(first_commit, buffer)
+  local result = require("overwatch.git").show_git_diff_against_commit(first_commit, buffer)
 
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
 
   assert(result, "show_git_diff_against_commit() should return true")
   assert(#extmarks > 0, "No diff extmarks were created")
 
   utils.clear_diff_marks(buffer)
 
-  result = require("unified.git").show_git_diff_against_commit(second_commit, buffer)
-  extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  result = require("overwatch.git").show_git_diff_against_commit(second_commit, buffer)
+  extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
 
   assert(result, "show_git_diff_against_commit() should return true for second commit")
   assert(#extmarks > 0, "No diff extmarks were created for second commit")
@@ -63,9 +63,9 @@ function M.test_diff_against_commit()
   utils.clear_diff_marks(buffer)
 
   vim.cmd("write")
-  result = require("unified.git").show_git_diff_against_commit(first_commit, buffer)
+  result = require("overwatch.git").show_git_diff_against_commit(first_commit, buffer)
   assert(result, "show_git_diff_against_commit() should return true after write and direct call")
-  extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
   assert(#extmarks > 0, "No diff extmarks were created after write and direct call")
 
   utils.clear_diff_marks(buffer)
@@ -105,17 +105,17 @@ function M.test_commit_base_persistence()
   vim.cmd("edit " .. test_path)
   local buffer = vim.fn.bufnr(test_path)
 
-  local result = require("unified.git").show_git_diff_against_commit(first_commit, buffer)
+  local result = require("overwatch.git").show_git_diff_against_commit(first_commit, buffer)
   assert(result, "Failed to display diff against first commit")
 
-  local extmarks_before_edit = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks_before_edit = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
   assert(#extmarks_before_edit > 0, "No diff extmarks were created for first commit")
 
   vim.api.nvim_buf_set_lines(buffer, 0, 1, false, { "MODIFIED line 1" })
 
   vim.cmd("sleep 100m")
 
-  local extmarks_after_edit = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks_after_edit = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
   assert(#extmarks_after_edit > 0, "No diff extmarks after buffer modification")
 
   local current_file_content = table.concat(vim.api.nvim_buf_get_lines(buffer, 0, -1, false), "\n")

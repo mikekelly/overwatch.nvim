@@ -1,4 +1,4 @@
-local hunk_store = require("unified.hunk_store")
+local hunk_store = require("overwatch.hunk_store")
 
 local function jump(forward)
   local hunks = hunk_store.get(vim.api.nvim_get_current_buf())

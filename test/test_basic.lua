@@ -1,4 +1,4 @@
--- Test file for basic functionality of unified.nvim
+-- Test file for basic functionality of overwatch.nvim
 local M = {}
 
 -- Import test utilities
@@ -28,10 +28,10 @@ function M.test_show_diff_api()
 
   -- Call the plugin function to show diff
   -- Call the plugin function to show diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
 
   local buffer = vim.api.nvim_get_current_buf()
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
   local has_signs = utils.check_signs_exist(buffer)
 
   assert(result, "show_git_diff() should return true")
@@ -76,7 +76,7 @@ function M.test_diff_command()
   vim.api.nvim_buf_set_lines(0, 3, 3, false, { "new line" }) -- Add new line
 
   -- Call the diff function directly to avoid file tree interference
-  local diff_applied = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local diff_applied = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
   assert(diff_applied, "show_git_diff_against_commit should return true when changes exist")
 
   -- Wait for extmarks to appear (polling - might be optional now but safer)
@@ -94,17 +94,17 @@ function M.test_diff_command()
   end
 
   -- Check that extmarks were created
-  assert(has_extmarks, "No diff extmarks were created after running Unified command")
+  assert(has_extmarks, "No diff extmarks were created after running Overwatch command")
 
   -- Check for signs
   local has_signs = utils.check_signs_exist(buffer)
-  assert(has_signs, "No diff signs were placed after running Unified command")
+  assert(has_signs, "No diff signs were placed after running Overwatch command")
 
   -- Validate that we have some changes
   assert(#marks > 0, "No extmarks found for changes")
 
   -- Deactivate diff using the toggle command
-  require("unified.command").reset()
+  require("overwatch.command").reset()
   -- Check extmarks are cleared after deactivation
   has_extmarks, marks = utils.check_extmarks_exist(buffer)
   assert(not has_extmarks, "Extmarks were not cleared after deactivation")
@@ -132,7 +132,7 @@ function M.test_diff_parsing()
 
   -- Parse the diff
   -- Parse the diff
-  local hunks = require("unified.diff").parse_diff(diff_output)
+  local hunks = require("overwatch.diff").parse_diff(diff_output)
 
   -- Verify hunks were correctly parsed
   assert(#hunks > 0, "No hunks were parsed from diff output")
@@ -171,10 +171,10 @@ function M.test_git_diff()
 
   -- Call the plugin function to show git diff
   -- Call the plugin function to show git diff
-  local result = require("unified.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
+  local result = require("overwatch.git").show_git_diff_against_commit("HEAD", vim.api.nvim_get_current_buf())
 
   local buffer = vim.api.nvim_get_current_buf()
-  local extmarks = utils.get_extmarks(buffer, { namespace = "unified_diff", details = true })
+  local extmarks = utils.get_extmarks(buffer, { namespace = "overwatch_diff", details = true })
   local has_signs = utils.check_signs_exist(buffer)
 
   assert(result, "show_git_diff() should return true")

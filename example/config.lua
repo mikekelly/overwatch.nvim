@@ -1,7 +1,7 @@
--- Example configuration for unified.nvim
+-- Example configuration for overwatch.nvim
 
 -- Default configuration
-require("unified").setup({
+require("overwatch").setup({
   -- Sign column symbols
   signs = {
     add = "│",

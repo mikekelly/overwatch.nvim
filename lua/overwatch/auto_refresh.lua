@@ -2,23 +2,23 @@ local M = {}
 
 local default = {
   debounce_delay = 300,
-  augroup_name = "UnifiedDiffAutoRefresh",
+  augroup_name = "OverwatchDiffAutoRefresh",
 }
 
 ---@param buffer number
 function M.setup(buffer)
-  local diff = require("unified.diff")
-  local async = require("unified.utils.async")
+  local diff = require("overwatch.diff")
+  local async = require("overwatch.utils.async")
   local group_name = default.augroup_name
   local debounce_delay = default.debounce_delay
 
   vim.api.nvim_create_augroup(group_name, { clear = true })
 
   local debounced_show_diff = async.debounce(function()
-    local state = require("unified.state")
+    local state = require("overwatch.state")
     local commit = state.get_commit_base()
 
-    local git = require("unified.git")
+    local git = require("overwatch.git")
     git.show_git_diff_against_commit(commit, buffer)
   end, debounce_delay)
 

@@ -1,5 +1,5 @@
-local hunk_store = require("unified.hunk_store")
-local navigation = require("unified.navigation")
+local hunk_store = require("overwatch.hunk_store")
+local navigation = require("overwatch.navigation")
 
 local M = {}
 

@@ -1,8 +1,8 @@
-local Job = require("unified.utils.job")
-local Cache = require("unified.utils.cache")
-local Config = require("unified.config")
-local Diff = require("unified.diff")
-local Hunk = require("unified.hunk_store")
+local Job = require("overwatch.utils.job")
+local Cache = require("overwatch.utils.cache")
+local Config = require("overwatch.config")
+local Diff = require("overwatch.diff")
+local Hunk = require("overwatch.hunk_store")
 
 local M = {}
 
@@ -47,7 +47,7 @@ end
 local function clear_diff(buf)
   local ns = Config.ns_id
   vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-  vim.fn.sign_unplace("unified_diff", { buffer = buf })
+  vim.fn.sign_unplace("overwatch_diff", { buffer = buf })
   Hunk.clear(buf)
 end
 

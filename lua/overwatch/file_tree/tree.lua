@@ -1,7 +1,7 @@
 -- FileTree implementation
-local Node = require("unified.file_tree.node")
+local Node = require("overwatch.file_tree.node")
 
-local job = require("unified.utils.job")
+local job = require("overwatch.utils.job")
 local FileTree = {}
 FileTree.__index = FileTree
 

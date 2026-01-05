@@ -1,14 +1,14 @@
 local M = {}
-local Job = require("unified.utils.job")
-local Diff = require("unified.diff")
-local State = require("unified.state")
+local Job = require("overwatch.utils.job")
+local Diff = require("overwatch.diff")
+local State = require("overwatch.state")
 
 local function get_buf_and_path()
   local buf = vim.api.nvim_get_current_buf()
   local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-  if ft == "unified_tree" then
+  if ft == "overwatch_tree" then
     vim.api.nvim_echo(
-      { { "Unified: hunk actions are not available in the file tree buffer", "WarningMsg" } },
+      { { "Overwatch: hunk actions are not available in the file tree buffer", "WarningMsg" } },
       false,
       {}
     )
@@ -16,7 +16,7 @@ local function get_buf_and_path()
   end
   local abs = vim.api.nvim_buf_get_name(buf)
   if abs == "" then
-    vim.api.nvim_echo({ { "Unified: buffer has no file path", "ErrorMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: buffer has no file path", "ErrorMsg" } }, false, {})
     return nil
   end
   return buf, abs
@@ -186,29 +186,29 @@ local function do_action(which)
   end
   local root = find_git_root(dirname(abs))
   if not root then
-    vim.api.nvim_echo({ { "Unified: not a git repository", "ErrorMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: not a git repository", "ErrorMsg" } }, false, {})
     return
   end
   local rel = relpath(abs, root)
   if not rel or rel == "" then
-    vim.api.nvim_echo({ { "Unified: could not compute file path relative to repo", "ErrorMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: could not compute file path relative to repo", "ErrorMsg" } }, false, {})
     return
   end
   local mode = (which == "unstage") and "cached" or "working"
   local patch_text, err = read_patch(root, rel, mode)
   if not patch_text then
-    vim.api.nvim_echo({ { "Unified: " .. err, "WarningMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: " .. err, "WarningMsg" } }, false, {})
     return
   end
   local parsed = parse_patch(patch_text)
   if not parsed.hunks or #parsed.hunks == 0 then
-    vim.api.nvim_echo({ { "Unified: no hunks found for file", "WarningMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: no hunks found for file", "WarningMsg" } }, false, {})
     return
   end
   local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
   local h = pick_hunk_for_cursor(parsed.hunks, cursor_line)
   if not h then
-    vim.api.nvim_echo({ { "Unified: could not determine current hunk", "WarningMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: could not determine current hunk", "WarningMsg" } }, false, {})
     return
   end
   local single = build_single_hunk_patch(rel, parsed, h)
@@ -220,12 +220,12 @@ local function do_action(which)
   elseif which == "revert" then
     args = { "-R" }
   else
-    vim.api.nvim_echo({ { "Unified: unknown action " .. tostring(which), "ErrorMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: unknown action " .. tostring(which), "ErrorMsg" } }, false, {})
     return
   end
   local ok, msg = apply_patch(root, single, args)
   if not ok then
-    vim.api.nvim_echo({ { "Unified: git apply failed: " .. (msg or ""), "ErrorMsg" } }, false, {})
+    vim.api.nvim_echo({ { "Overwatch: git apply failed: " .. (msg or ""), "ErrorMsg" } }, false, {})
     return
   end
   -- Always reload the buffer to pick up external changes made by git apply
@@ -239,7 +239,7 @@ local function do_action(which)
   Diff.show_current()
   local ok_base, base = pcall(State.get_commit_base)
   if ok_base and base then
-    local ftree = require("unified.file_tree")
+    local ftree = require("overwatch.file_tree")
     ftree.show(base)
   end
 end

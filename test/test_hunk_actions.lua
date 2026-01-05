@@ -42,13 +42,13 @@ function M.test_stage_hunk_added_line()
   vim.cmd("write")
 
   -- Render diff against HEAD so hunks are known (not strictly required for actions)
-  require("unified.git").show_git_diff_against_commit("HEAD", buf)
+  require("overwatch.git").show_git_diff_against_commit("HEAD", buf)
 
   -- Place cursor in the changed hunk
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
 
   -- Stage the current hunk
-  require("unified.hunk_actions").stage_hunk()
+  require("overwatch.hunk_actions").stage_hunk()
 
   -- Verify the file is in the index diff
   local out = git(repo, { "diff", "--cached", "--name-only", "--", "test.txt" })
@@ -71,16 +71,16 @@ function M.test_unstage_staged_hunk()
   local buf = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(buf, 0, 1, false, { "modified line 1" })
   vim.cmd("write")
-  require("unified.git").show_git_diff_against_commit("HEAD", buf)
+  require("overwatch.git").show_git_diff_against_commit("HEAD", buf)
 
   -- Stage first
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
-  require("unified.hunk_actions").stage_hunk()
+  require("overwatch.hunk_actions").stage_hunk()
   local out = git(repo, { "diff", "--cached", "--name-only", "--", "test.txt" })
   assert_true(tostring(out):match("test.txt") ~= nil, "Expected test.txt to be staged before unstage")
 
   -- Unstage the same hunk
-  require("unified.hunk_actions").unstage_hunk()
+  require("overwatch.hunk_actions").unstage_hunk()
   local out2 = git(repo, { "diff", "--cached", "--name-only", "--", "test.txt" })
   -- Should be empty (no staged changes for the file)
   assert_true(not tostring(out2):match("test.txt"), "Expected test.txt to be removed from index after unstage")
@@ -103,13 +103,13 @@ function M.test_revert_hunk_added_line()
   -- Modify line 3 to create a hunk in the middle
   vim.api.nvim_buf_set_lines(buf, 2, 3, false, { "modified line 3" })
   vim.cmd("write")
-  require("unified.git").show_git_diff_against_commit("HEAD", buf)
+  require("overwatch.git").show_git_diff_against_commit("HEAD", buf)
 
   -- Cursor on line 3 hunk
   vim.api.nvim_win_set_cursor(0, { 3, 0 })
 
   -- Revert the hunk from working tree
-  require("unified.hunk_actions").revert_hunk()
+  require("overwatch.hunk_actions").revert_hunk()
 
   -- Ensure buffer reflects on-disk change
   vim.cmd("checktime")

@@ -1,32 +1,37 @@
-# unified.nvim
+# overwatch.nvim
 
-A Neovim plugin for displaying inline unified diffs directly in your buffer.
-
-<img width="1840" alt="image" src="https://github.com/user-attachments/assets/7655659e-c8af-40c5-ad70-59f67a2b16d9" />
+A Neovim plugin for displaying inline unified diffs directly in your buffer. Fork of [unified.nvim](https://github.com/axkirillov/unified.nvim) with enhanced file tree navigation.
 
 ## Features
 
 * **Inline Diffs**: View git diffs directly in your buffer, without needing a separate window.
 * **File Tree Explorer**: A file tree explorer is displayed, showing all files that have been changed.
+* **Auto-preview on Navigation**: Moving through files in the tree automatically previews the diff (no need to press `l`).
+* **Auto-refresh File Tree**: The file tree automatically refreshes when git status changes (polls every 2 seconds).
 * **Git Gutter Signs**: Gutter signs are used to indicate added, modified, and deleted lines.
 * **Customizable**: Configure the signs, highlights, and line symbols to your liking.
-* **Auto-refresh**: The diff view automatically refreshes as you make changes to the buffer.
+* **Auto-refresh Diff**: The diff view automatically refreshes as you make changes to the buffer.
+
+## What's Different from unified.nvim?
+
+1. **Auto-preview**: `j`/`k` navigation in the file tree automatically opens and previews the file diff
+2. **Auto-refresh file tree**: The file tree polls git status and refreshes when changes are detected
 
 ## Requirements
 
--   Neovim >= 0.5.0
+-   Neovim >= 0.10.0
 -   Git
 -   A [Nerd Font](https://www.nerdfonts.com/) installed and configured in your terminal/GUI is required to display file icons correctly in the file tree.
 
 ## Installation
 
-You can install `unified.nvim` using your favorite plugin manager.
+You can install `overwatch.nvim` using your favorite plugin manager.
 
 ### [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
-  'axkirillov/unified.nvim',
+  'mikekelly/overwatch.nvim',
   opts = {
     -- your configuration comes here
   }
@@ -37,9 +42,9 @@ You can install `unified.nvim` using your favorite plugin manager.
 
 ```lua
 use {
-  'axkirillov/unified.nvim',
+  'mikekelly/overwatch.nvim',
   config = function()
-    require('unified').setup({
+    require('overwatch').setup({
       -- your configuration comes here
     })
   end
@@ -48,10 +53,10 @@ use {
 
 ## Configuration
 
-You can configure `unified.nvim` by passing a table to the `setup()` function. Here are the default settings:
+You can configure `overwatch.nvim` by passing a table to the `setup()` function. Here are the default settings:
 
 ```lua
-require('unified').setup({
+require('overwatch').setup({
   signs = {
     add = "│",
     delete = "│",
@@ -68,6 +73,10 @@ require('unified').setup({
     change = "~",
   },
   auto_refresh = true, -- Whether to automatically refresh diff when buffer changes
+  file_tree = {
+    auto_refresh = true, -- Whether to auto-refresh file tree when git status changes
+    refresh_interval = 2000, -- Polling interval in milliseconds
+  },
 })
 ```
 
@@ -75,18 +84,18 @@ require('unified').setup({
 
 1.  Open a file in a git repository.
 2.  Make some changes to the file.
-3.  Run the command `:Unified` to display the diff against `HEAD` and open the file tree.
-4.  To close the diff view and file tree, run `:Unified` again.
-5.  To show the diff against a specific commit, run `:Unified <commit_ref>`, for example `:Unified HEAD~1`.
+3.  Run the command `:Overwatch` to display the diff against `HEAD` and open the file tree.
+4.  To close the diff view and file tree, run `:Overwatch` again.
+5.  To show the diff against a specific commit, run `:Overwatch <commit_ref>`, for example `:Overwatch HEAD~1`.
 
 ### File Tree Interaction
 
 When the file tree is open, you can use the following keymaps:
 
-  * `j`/`k` or `<Down>`/`<Up>`: Move the cursor down/up between file nodes.
-  * `l`: Open the file under the cursor in the main window, displaying its diff.
+  * `j`/`k` or `<Down>`/`<Up>`: Move between files and **automatically preview** the diff.
+  * `l`: Explicitly open the file under the cursor (same as moving to it).
   * `q`: Close the file tree window.
-  * `R`: Refresh the file tree.
+  * `R`: Manually refresh the file tree.
   * `?`: Show a help dialog.
 
 When the file tree opens, the first file is automatically opened in the main window.
@@ -105,8 +114,8 @@ The file tree displays the Git status of each file:
 To navigate between hunks, you'll need to set your own keymaps:
 
 ```lua
-vim.keymap.set('n', ']h', function() require('unified.navigation').next_hunk() end)
-vim.keymap.set('n', '[h', function() require('unified.navigation').previous_hunk() end)
+vim.keymap.set('n', ']h', function() require('overwatch.navigation').next_hunk() end)
+vim.keymap.set('n', '[h', function() require('overwatch.navigation').previous_hunk() end)
 ```
 
 ### Toggle API
@@ -114,26 +123,26 @@ vim.keymap.set('n', '[h', function() require('unified.navigation').previous_hunk
 For programmatic control, you can use the toggle function:
 
 ```lua
-vim.keymap.set('n', '<leader>ud', require('unified').toggle, { desc = 'Toggle unified diff' })
+vim.keymap.set('n', '<leader>ud', require('overwatch').toggle, { desc = 'Toggle overwatch diff' })
 ```
 
 This toggles the diff view on/off, remembering the previous commit reference.
 
 ### Hunk actions (API)
 
-Unified provides a function-only API for hunk actions. Define your own keymaps or commands if desired.
+Overwatch provides a function-only API for hunk actions. Define your own keymaps or commands if desired.
 
 Example keymaps:
 
 ```lua
-local actions = require('unified.hunk_actions')
-vim.keymap.set('n', 'gs', actions.stage_hunk,   { desc = 'Unified: Stage hunk' })
-vim.keymap.set('n', 'gu', actions.unstage_hunk, { desc = 'Unified: Unstage hunk' })
-vim.keymap.set('n', 'gr', actions.revert_hunk,  { desc = 'Unified: Revert hunk' })
+local actions = require('overwatch.hunk_actions')
+vim.keymap.set('n', 'gs', actions.stage_hunk,   { desc = 'Overwatch: Stage hunk' })
+vim.keymap.set('n', 'gu', actions.unstage_hunk, { desc = 'Overwatch: Unstage hunk' })
+vim.keymap.set('n', 'gr', actions.revert_hunk,  { desc = 'Overwatch: Revert hunk' })
 ```
 
 Behavior notes:
-- Operates on the hunk under the cursor inside a regular file buffer (not in the unified file tree buffer).
+- Operates on the hunk under the cursor inside a regular file buffer (not in the overwatch file tree buffer).
 - Stage: applies a minimal single-hunk patch to the index.
 - Unstage: reverse-applies the hunk patch from the index.
 - Revert: reverse-applies the hunk patch to the working tree.
@@ -142,9 +151,9 @@ Behavior notes:
 
 ## Commands
 
-  * `:Unified`: Toggles the diff view. If closed, it shows the diff against `HEAD`. If open, it closes the view.
-  * `:Unified <commit_ref>`: Shows the diff against the specified commit reference (e.g., a commit hash, branch name, or tag) and opens the file tree for that range.
-  * `:Unified reset`: Removes all unified diff highlights and signs from the current buffer and closes the file tree window if it is open.
+  * `:Overwatch`: Toggles the diff view. If closed, it shows the diff against `HEAD`. If open, it closes the view.
+  * `:Overwatch <commit_ref>`: Shows the diff against the specified commit reference (e.g., a commit hash, branch name, or tag) and opens the file tree for that range.
+  * `:Overwatch reset`: Removes all overwatch diff highlights and signs from the current buffer and closes the file tree window if it is open.
 
 ## Development
 

@@ -3,9 +3,9 @@ local vim = vim
 local assert = assert
 
 -- Import modules
-local file_tree = require("unified.file_tree")
-local git = require("unified.git")
-local state = require("unified.state")
+local file_tree = require("overwatch.file_tree")
+local git = require("overwatch.git")
+local state = require("overwatch.state")
 
 -- Test function
 local function test_commit_file_tree()

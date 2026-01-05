@@ -1,7 +1,7 @@
 -- utils/job.lua --------------------------------------------------------------
 -- Thin, coroutine-friendly wrapper around vim.system()  (Neovim ≥ 0.10)
 -- Usage:
---   local job = require('unified.utils.job')
+--   local job = require('overwatch.utils.job')
 --   job.run({ 'git', 'status', '--porcelain' }, { cwd = dir }, function(out, code) … end)
 --   job.await({ 'git', 'rev-parse', 'HEAD' })                    -- ⇢ stdout , code
 

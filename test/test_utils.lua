@@ -1,4 +1,4 @@
--- Test utilities for unified.nvim
+-- Test utilities for overwatch.nvim
 local M = {}
 
 -- Setup test environment
@@ -8,17 +8,17 @@ function M.setup()
   vim.fn.writefile({ "line 1", "line 2", "line 3", "line 4", "line 5" }, test_file)
 
   -- Define signs in case they aren't loaded from plugin
-  vim.fn.sign_define("unified_diff_add", {
+  vim.fn.sign_define("overwatch_diff_add", {
     text = "+",
     texthl = "DiffAdd",
   })
 
-  vim.fn.sign_define("unified_diff_delete", {
+  vim.fn.sign_define("overwatch_diff_delete", {
     text = "-",
     texthl = "DiffDelete",
   })
 
-  vim.fn.sign_define("unified_diff_change", {
+  vim.fn.sign_define("overwatch_diff_change", {
     text = "~",
     texthl = "DiffChange",
   })
@@ -258,7 +258,7 @@ local function wait_until(fn, timeout)
 end
 
 function M.check_extmarks_exist(buffer, namespace, timeout)
-  local ns = vim.api.nvim_create_namespace(namespace or "unified_diff")
+  local ns = vim.api.nvim_create_namespace(namespace or "overwatch_diff")
   local marks = {}
   local found = wait_until(function()
     marks = vim.api.nvim_buf_get_extmarks(buffer, ns, 0, -1, {})
@@ -269,7 +269,7 @@ end
 
 function M.get_extmarks(buffer, opts)
   opts = opts or {}
-  local ns = vim.api.nvim_create_namespace(opts.namespace or "unified_diff")
+  local ns = vim.api.nvim_create_namespace(opts.namespace or "overwatch_diff")
   local ext = {}
   wait_until(function()
     ext = vim.api.nvim_buf_get_extmarks(buffer, ns, 0, -1, opts.details == false and {} or { details = true })
@@ -280,15 +280,15 @@ end
 
 -- Helper to check if signs exist
 function M.check_signs_exist(buffer, group)
-  local signs = vim.fn.sign_getplaced(buffer, { group = group or "unified_diff" })
+  local signs = vim.fn.sign_getplaced(buffer, { group = group or "overwatch_diff" })
   return #signs > 0 and #signs[1].signs > 0, signs
 end
 
 -- Helper to clean up diff marks
 function M.clear_diff_marks(buffer)
-  local ns_id = vim.api.nvim_create_namespace("unified_diff")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_diff")
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
-  vim.fn.sign_unplace("unified_diff", { buffer = buffer })
+  vim.fn.sign_unplace("overwatch_diff", { buffer = buffer })
 end
 
 return M

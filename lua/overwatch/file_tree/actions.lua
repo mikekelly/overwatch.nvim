@@ -1,7 +1,7 @@
 local M = {}
 
 local function is_file_tree_buffer()
-  local state = require("unified.file_tree.state")
+  local state = require("overwatch.file_tree.state")
   return vim.api.nvim_get_current_buf() == state.buffer
 end
 
@@ -10,7 +10,7 @@ local function open_file_node(node)
     return
   end
 
-  local state = require("unified.state")
+  local state = require("overwatch.state")
   local tree_win = vim.api.nvim_get_current_win()
   local win = state.get_main_window()
 
@@ -35,14 +35,14 @@ local function open_file_node(node)
   end
   vim.api.nvim_win_set_buf(win, target_buf_id)
 
-  local diff = require("unified.diff")
+  local diff = require("overwatch.diff")
   local commit = state.get_commit_base()
   diff.show(commit, target_buf_id)
-  local auto_refresh = require("unified.auto_refresh")
+  local auto_refresh = require("overwatch.auto_refresh")
   auto_refresh.setup(target_buf_id)
 
   -- Scroll opened buffer to first git hunk without changing focus (diffview-like)
-  local hunk_store = require("unified.hunk_store")
+  local hunk_store = require("overwatch.hunk_store")
   local hunks = hunk_store.get(target_buf_id)
   if hunks and #hunks > 0 then
     local first = hunks[1]
@@ -68,7 +68,7 @@ function M.toggle_node()
   end
 
   local line = vim.api.nvim_win_get_cursor(0)[1] - 1
-  local state = require("unified.file_tree.state")
+  local state = require("overwatch.file_tree.state")
   local node = state.line_to_node[line]
 
   if not node then
@@ -84,15 +84,15 @@ function M.refresh()
     return
   end
 
-  local tree_state = require("unified.file_tree.state")
+  local tree_state = require("overwatch.file_tree.state")
   local root_path = tree_state.root_path
   local diff_only = tree_state.diff_only
   local commit_ref = tree_state.commit_ref
   local buf = tree_state.buffer
   local win = tree_state.window
 
-  local FileTree = require("unified.file_tree.tree")
-  local render = require("unified.file_tree.render")
+  local FileTree = require("overwatch.file_tree.tree")
+  local render = require("overwatch.file_tree.render")
 
   local tree = FileTree.new(root_path)
 
@@ -133,7 +133,7 @@ function M.show_help()
   end
 
   local help_text = {
-    "Unified File Explorer Help",
+    "Overwatch File Explorer Help",
     "------------------------",
     "",
     "Navigation:",
@@ -179,7 +179,7 @@ function M.show_help()
   vim.bo[help_buf].bufhidden = "wipe"
 
   -- Add highlighting
-  local ns_id = vim.api.nvim_create_namespace("unified_help")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_help")
   vim.api.nvim_buf_add_highlight(help_buf, ns_id, "Title", 0, 0, -1)
   vim.api.nvim_buf_add_highlight(help_buf, ns_id, "NonText", 1, 0, -1)
 
@@ -211,7 +211,7 @@ function M.go_to_parent()
   end
 
   local line = vim.api.nvim_win_get_cursor(0)[1] - 1
-  local state = require("unified.file_tree.state")
+  local state = require("overwatch.file_tree.state")
   local node = state.line_to_node[line]
 
   if not node or not node.parent or node.parent == state.current_tree.root then
@@ -235,14 +235,18 @@ end
 
 -- Close the file tree window
 function M.close_tree()
-  local state = require("unified.file_tree.state")
+  -- Stop auto-refresh timer
+  local tree_auto_refresh = require("overwatch.file_tree.auto_refresh")
+  tree_auto_refresh.stop()
+
+  local state = require("overwatch.file_tree.state")
   if state.window and vim.api.nvim_win_is_valid(state.window) then
     vim.api.nvim_win_close(state.window, true)
   end
   -- Reset state after closing
   state.reset_state()
   -- Also reset the global active state if the main plugin relies on the tree being open
-  local global_state = require("unified.state")
+  local global_state = require("overwatch.state")
   global_state.file_tree_win = nil
   global_state.file_tree_buf = nil
 end -- End of M.close_tree
@@ -254,7 +258,7 @@ function M.move_cursor_and_open_file(direction)
   end
 
   local current_line = vim.api.nvim_win_get_cursor(0)[1] - 1 -- 0-based
-  local state = require("unified.file_tree.state")
+  local state = require("overwatch.file_tree.state")
   local total_lines = vim.api.nvim_buf_line_count(state.buffer)
   local next_line = current_line
 
@@ -280,7 +284,7 @@ function M.move_cursor_file_only(direction, count)
     return
   end
 
-  local tree_state = require("unified.file_tree.state")
+  local tree_state = require("overwatch.file_tree.state")
   if not tree_state.buffer or not vim.api.nvim_buf_is_valid(tree_state.buffer) then
     return
   end

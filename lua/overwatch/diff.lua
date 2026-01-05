@@ -1,7 +1,7 @@
 local M = {}
 
-local config = require("unified.config")
-local hunk_store = require("unified.hunk_store")
+local config = require("overwatch.config")
+local hunk_store = require("overwatch.hunk_store")
 
 -- Parse diff and return a structured representation
 function M.parse_diff(diff_text)
@@ -44,7 +44,7 @@ end
 function M.display_deleted_file(buffer, blob_text)
   local ns_id = config.ns_id
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
-  vim.fn.sign_unplace("unified_diff", { buffer = buffer })
+  vim.fn.sign_unplace("overwatch_diff", { buffer = buffer })
 
   local lines = vim.split(blob_text, "\n", { plain = true })
   local was_modifiable = vim.bo[buffer].modifiable
@@ -65,7 +65,7 @@ function M.display_deleted_file(buffer, blob_text)
 
   for i = 0, #lines - 1 do
     vim.api.nvim_buf_set_extmark(buffer, ns_id, i, 0, {
-      line_hl_group = "UnifiedDiffDelete",
+      line_hl_group = "OverwatchDiffDelete",
     })
   end
 
@@ -78,7 +78,7 @@ function M.display_inline_diff(buffer, hunks)
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
 
   -- Clear existing signs
-  vim.fn.sign_unplace("unified_diff", { buffer = buffer })
+  vim.fn.sign_unplace("overwatch_diff", { buffer = buffer })
 
   local new_hunk_lines = {}
 
@@ -165,7 +165,7 @@ function M.display_inline_diff(buffer, hunks)
         new_idx = new_idx + 1
       elseif first_char == "+" then
         -- Added or modified line
-        local hl_group = "UnifiedDiffAdd"
+        local hl_group = "OverwatchDiffAdd"
 
         -- Process only if line is within range and not already marked
         if line_idx < buf_line_count and not marked_lines[line_idx] then
@@ -214,7 +214,7 @@ function M.display_inline_diff(buffer, hunks)
         new_idx = new_idx + 1
       elseif first_char == "-" then
         local line_text = line:sub(2)
-        local hl_group = "UnifiedDiffDelete"
+        local hl_group = "OverwatchDiffDelete"
 
         local attach_line = math.max(line_idx, 0)
         local show_above = attach_line > 0
@@ -273,17 +273,17 @@ function M.show(commit, buffer_id)
 
   local ft = vim.api.nvim_buf_get_option(buffer, "filetype")
 
-  if ft == "unified_tree" then
+  if ft == "overwatch_tree" then
     return false
   end
 
-  local git = require("unified.git")
+  local git = require("overwatch.git")
   return git.show_git_diff_against_commit(commit, buffer)
 end
 
 function M.show_current(commit)
   if not commit then
-    local state = require("unified.state")
+    local state = require("overwatch.state")
     local ok
     ok, commit = pcall(state.get_commit_base)
     commit = ok and commit or "HEAD"
@@ -291,7 +291,7 @@ function M.show_current(commit)
 
   local buf = vim.api.nvim_get_current_buf()
   local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-  if ft == "unified_tree" then
+  if ft == "overwatch_tree" then
     return false
   end
 

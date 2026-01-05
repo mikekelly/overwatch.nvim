@@ -1,12 +1,12 @@
 local M = {}
 
 M.setup = function()
-  vim.api.nvim_create_user_command("Unified", function(opts)
+  vim.api.nvim_create_user_command("Overwatch", function(opts)
     M.run(opts.args)
   end, {
     nargs = "*",
     complete = function(ArgLead, CmdLine, _)
-      if CmdLine:match("^Unified%s+") then
+      if CmdLine:match("^Overwatch%s+") then
         local suggestions = { "HEAD", "HEAD~1", "main", "reset" }
         local filtered_suggestions = {}
         for _, suggestion in ipairs(suggestions) do
@@ -33,9 +33,9 @@ M.run = function(args)
     commit_ref = "HEAD"
   end
 
-  local git = require("unified.git")
-  local state = require("unified.state")
-  local file_tree = require("unified.file_tree")
+  local git = require("overwatch.git")
+  local state = require("overwatch.state")
+  local file_tree = require("overwatch.file_tree")
   local cwd = vim.fn.getcwd()
 
   git.resolve_commit_hash(commit_ref, cwd, function(hash)
@@ -55,17 +55,21 @@ M.run = function(args)
 end
 
 function M.reset()
+  -- Stop auto-refresh timer
+  local tree_auto_refresh = require("overwatch.file_tree.auto_refresh")
+  tree_auto_refresh.stop()
+
   local buffer = vim.api.nvim_get_current_buf()
-  local config = require("unified.config")
+  local config = require("overwatch.config")
   local ns_id = config.ns_id
-  local hunk_store = require("unified.hunk_store")
+  local hunk_store = require("overwatch.hunk_store")
 
   vim.api.nvim_buf_clear_namespace(buffer, ns_id, 0, -1)
-  vim.fn.sign_unplace("unified_diff", { buffer = buffer })
+  vim.fn.sign_unplace("overwatch_diff", { buffer = buffer })
 
   hunk_store.clear(buffer)
 
-  local state = require("unified.state")
+  local state = require("overwatch.state")
   if state.auto_refresh_augroup then
     vim.api.nvim_del_augroup_by_id(state.auto_refresh_augroup)
     state.auto_refresh_augroup = nil

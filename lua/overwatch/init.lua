@@ -1,17 +1,17 @@
 local M = {}
 
 function M.setup(opts)
-  local config = require("unified.config")
-  local command = require("unified.command")
-  local file_tree = require("unified.file_tree")
+  local config = require("overwatch.config")
+  local command = require("overwatch.command")
+  local file_tree = require("overwatch.file_tree")
   config.setup(opts)
   command.setup()
   file_tree.setup()
 end
 
 function M.toggle()
-  local command = require("unified.command")
-  local state = require("unified.state")
+  local command = require("overwatch.command")
+  local state = require("overwatch.state")
 
   if state.is_active() then
     command.reset()

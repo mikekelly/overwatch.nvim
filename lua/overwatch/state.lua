@@ -1,4 +1,4 @@
--- State management for unified.nvim
+-- State management for overwatch.nvim
 local M = {}
 local m = {
   commit_base = nil,
@@ -35,13 +35,13 @@ function M.get_main_window()
     end
   end
 
-  vim.api.nvim_err_writeln("Unified: Could not find a suitable main window.")
+  vim.api.nvim_err_writeln("Overwatch: Could not find a suitable main window.")
   return nil
 end
 
 function M.set_commit_base(commit)
   m.commit_base = commit
-  vim.api.nvim_exec_autocmds("User", { pattern = "UnifiedBaseCommitUpdated" })
+  vim.api.nvim_exec_autocmds("User", { pattern = "OverwatchBaseCommitUpdated" })
 end
 
 ---@return string

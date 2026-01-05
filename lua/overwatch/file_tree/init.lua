@@ -1,14 +1,15 @@
 local M = {}
-local git = require("unified.git")
-local global_state = require("unified.state")
-local FileTree = require("unified.file_tree.tree")
-local render = require("unified.file_tree.render")
-local actions = require("unified.file_tree.actions")
+local git = require("overwatch.git")
+local global_state = require("overwatch.state")
+local FileTree = require("overwatch.file_tree.tree")
+local render = require("overwatch.file_tree.render")
+local actions = require("overwatch.file_tree.actions")
+local tree_auto_refresh = require("overwatch.file_tree.auto_refresh")
 local position_cursor_on_first_file
 
 function M.setup()
   vim.api.nvim_create_autocmd("User", {
-    pattern = "UnifiedBaseCommitUpdated",
+    pattern = "OverwatchBaseCommitUpdated",
     callback = function()
       local commit_hash = global_state.get_commit_base()
       M.show(commit_hash)
@@ -17,7 +18,7 @@ function M.setup()
 end
 
 function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
-  local tree_state = require("unified.file_tree.state")
+  local tree_state = require("overwatch.file_tree.state")
   tree_state.root_path = buffer_path
   tree_state.diff_only = diff_only
   tree_state.commit_ref = commit_ref_arg
@@ -67,7 +68,7 @@ function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
 
   local buf = vim.api.nvim_create_buf(false, true)
 
-  local buffer_name = "Unified: File Tree"
+  local buffer_name = "Overwatch: File Tree"
   if commit_ref then
     buffer_name = buffer_name .. " (" .. commit_ref .. ")"
   elseif diff_only then
@@ -79,7 +80,7 @@ function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].swapfile = false
   vim.bo[buf].bufhidden = "hide"
-  vim.bo[buf].filetype = "unified_tree"
+  vim.bo[buf].filetype = "overwatch_tree"
 
   render.render_tree(tree, buf)
 
@@ -104,7 +105,7 @@ function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
       do
         local first_node
         local line_count = vim.api.nvim_buf_line_count(buf)
-        local tree_state = require("unified.file_tree.state")
+        local tree_state = require("overwatch.file_tree.state")
         for i = 3, line_count - 1 do
           local n = tree_state.line_to_node[i]
           if n and not n.is_dir then
@@ -116,6 +117,9 @@ function M.create_file_tree_buffer(buffer_path, diff_only, commit_ref_arg)
           actions.open_file_node(first_node)
         end
       end
+
+      -- Start auto-refresh timer
+      tree_auto_refresh.start()
     end)
   end)
 
@@ -131,7 +135,7 @@ position_cursor_on_first_file = function(buffer, window)
 
   local first_file_line = -1
   local line_count = vim.api.nvim_buf_line_count(buffer)
-  local tree_state = require("unified.file_tree.state")
+  local tree_state = require("overwatch.file_tree.state")
   for i = 3, line_count - 1 do
     local node = tree_state.line_to_node[i]
     if node and not node.is_dir then
@@ -155,7 +159,7 @@ function M.show(commit_hash)
   local diff_only = true -- Always show diff only for a specific commit
 
   -- Check if tree window already exists and is valid
-  local tree_state = require("unified.file_tree.state")
+  local tree_state = require("overwatch.file_tree.state")
   if
     tree_state.window
     and vim.api.nvim_win_is_valid(tree_state.window)
@@ -178,7 +182,7 @@ function M.show(commit_hash)
     do
       local first_node
       local line_count = vim.api.nvim_buf_line_count(new_buf)
-      local tree_state = require("unified.file_tree.state")
+      local tree_state = require("overwatch.file_tree.state")
       for i = 3, line_count - 1 do
         local n = tree_state.line_to_node[i]
         if n and not n.is_dir then

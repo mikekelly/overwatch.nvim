@@ -1,10 +1,10 @@
 -- Module for rendering the FileTree structure into a Neovim buffer
-local tree_state = require("unified.file_tree.state")
+local tree_state = require("overwatch.file_tree.state")
 
 local M = {}
 
 -- Helper: Shorten directory path for display
--- Input: "lua/unified/file_tree/render.lua" -> Output: { "l/u/f/file_tree", "render.lua" }
+-- Input: "lua/overwatch/file_tree/render.lua" -> Output: { "l/u/f/file_tree", "render.lua" }
 -- Input: "README.md" -> Output: { "", "README.md" }
 local function get_shortened_display_parts(full_path)
   local parts = {}
@@ -62,7 +62,7 @@ end
 -- Render the file tree to a buffer with the new flattened, shortened path structure
 function M.render_tree(tree, buffer)
   buffer = buffer or vim.api.nvim_get_current_buf()
-  local ns_id = vim.api.nvim_create_namespace("unified_file_tree")
+  local ns_id = vim.api.nvim_create_namespace("overwatch_file_tree")
 
   -- Clear buffer and previous state
   vim.bo[buffer].modifiable = true
