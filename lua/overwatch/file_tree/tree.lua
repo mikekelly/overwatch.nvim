@@ -120,7 +120,13 @@ function FileTree:scan_directory(dir)
   self.root:sort()
 end
 
-function FileTree:update_git_status(root_dir, diff_only, commit_ref, callback)
+-- Update git status for the tree
+-- @param root_dir string - the root directory
+-- @param diff_only boolean - only show changed files
+-- @param commit_ref string|nil - commit to diff against (or compare with parent)
+-- @param callback function - called when done
+-- @param parent_ref string|nil - if provided, diff between parent_ref and commit_ref (history mode)
+function FileTree:update_git_status(root_dir, diff_only, commit_ref, callback, parent_ref)
   local changed_files = {}
   local has_changes = false
 
@@ -147,6 +153,101 @@ function FileTree:update_git_status(root_dir, diff_only, commit_ref, callback)
         changed_files[path] = status
         has_changes = true
       end
+    end
+  end
+
+  -- History mode: diff between parent and commit (what changed in that commit)
+  if commit_ref and parent_ref then
+    local diff_cmd = { "git", "diff", "--name-status", parent_ref, commit_ref }
+    job.run(diff_cmd, { cwd = root_dir }, function(diff_result, diff_code, diff_err)
+      if diff_code == 0 then
+        for line in (diff_result or ""):gmatch("[^\r\n]+") do
+          local status_char = line:sub(1, 1)
+          local file_part = line:match("^[AMDR]%s+(.*)")
+
+          if file_part then
+            local file = file_part
+            if status_char == "R" then
+              local parts = vim.split(file_part, "\t")
+              if #parts == 2 then
+                file = parts[2]
+              end
+            end
+            local path = root_dir .. "/" .. file
+            changed_files[path] = (status_char .. " "):sub(1, 2)
+            has_changes = true
+          end
+        end
+      else
+        vim.api.nvim_echo({ { "Error getting git diff: " .. (diff_err or "Unknown error"), "ErrorMsg" } }, false, {})
+        vim.schedule(function()
+          if callback then
+            callback(false)
+          end
+        end)
+        return
+      end
+
+      vim.schedule(function()
+        -- In history mode, only show files from the commit diff (no working tree status)
+        self.root.children = {}
+        self.root.ordered_children = {}
+        if has_changes then
+          for path, status in pairs(changed_files) do
+            self:add_file(path, status)
+          end
+        end
+
+        self:update_parent_statuses(self.root)
+        self.root:sort()
+        if callback then
+          callback(true)
+        end
+      end)
+    end)
+    return
+  end
+
+  -- Root commit case: diff against empty tree
+  if commit_ref and not parent_ref then
+    -- Check if this is being called from history mode for a root commit
+    local global_state = require("overwatch.state")
+    if global_state.is_history_mode() then
+      -- Diff against empty tree for root commit
+      local empty_tree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+      local diff_cmd = { "git", "diff", "--name-status", empty_tree, commit_ref }
+      job.run(diff_cmd, { cwd = root_dir }, function(diff_result, diff_code, diff_err)
+        if diff_code == 0 then
+          for line in (diff_result or ""):gmatch("[^\r\n]+") do
+            local status_char = line:sub(1, 1)
+            local file_part = line:match("^[AMDR]%s+(.*)")
+
+            if file_part then
+              local file = file_part
+              local path = root_dir .. "/" .. file
+              changed_files[path] = (status_char .. " "):sub(1, 2)
+              has_changes = true
+            end
+          end
+        end
+
+        vim.schedule(function()
+          self.root.children = {}
+          self.root.ordered_children = {}
+          if has_changes then
+            for path, status in pairs(changed_files) do
+              self:add_file(path, status)
+            end
+          end
+
+          self:update_parent_statuses(self.root)
+          self.root:sort()
+          if callback then
+            callback(true)
+          end
+        end)
+      end)
+      return
     end
   end
 

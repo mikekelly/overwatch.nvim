@@ -10,19 +10,35 @@ local function open_file_node(node)
     return
   end
 
-  local state = require("overwatch.state")
+  local global_state = require("overwatch.state")
+  local tree_state = require("overwatch.file_tree.state")
   local tree_win = vim.api.nvim_get_current_win()
-  local win = state.get_main_window()
+  local win = global_state.get_main_window()
 
   if not win or not vim.api.nvim_win_is_valid(win) or win == tree_win then
     vim.cmd("rightbelow vsplit")
     win = vim.api.nvim_get_current_win()
-    state.main_win = win
+    global_state.main_win = win
     -- Restore focus to the tree window so the cursor does not jump
     if vim.api.nvim_win_is_valid(tree_win) then
       vim.api.nvim_set_current_win(tree_win)
     end
   end
+
+  -- In history mode, show hunk view instead of inline diff
+  if global_state.is_history_mode() then
+    local hunk_view = require("overwatch.hunk_view")
+    -- Get relative path for the file
+    local rel_path = node.path
+    local cwd = vim.fn.getcwd()
+    if rel_path:sub(1, #cwd) == cwd then
+      rel_path = rel_path:sub(#cwd + 2) -- Remove cwd and separator
+    end
+    hunk_view.show(rel_path, tree_state.current_commit, tree_state.parent_commit)
+    return
+  end
+
+  -- Normal mode: open the file with inline diff
 
   -- Open the target buffer in the main window without changing focus
   local target_path = vim.fn.fnameescape(node.path)
@@ -43,7 +59,7 @@ local function open_file_node(node)
   vim.api.nvim_win_set_buf(win, target_buf_id)
 
   local diff = require("overwatch.diff")
-  local commit = state.get_commit_base()
+  local commit = global_state.get_commit_base()
   diff.show(commit, target_buf_id)
   local auto_refresh = require("overwatch.auto_refresh")
   auto_refresh.setup(target_buf_id)
@@ -179,6 +195,9 @@ function M.show_help()
     "",
     "Navigation:",
     "  j/k       : Move up/down",
+    "  h         : Go to older commit",
+    "  l         : Go to newer commit / open file",
+    "  Enter     : Open file and focus",
     "",
     "Actions:",
     "  R         : Refresh the tree",
@@ -186,12 +205,11 @@ function M.show_help()
     "  ?         : Show this help",
     "",
     "File Status:",
-    "  M         : Modified",
-    "  A         : Added",
-    "  D         : Deleted",
-    "  R         : Renamed",
-    "  C         : Copied / In Commit",
-    "  ?         : Untracked",
+    "  +         : Added / Untracked",
+    "  󰏫         : Modified",
+    "  −         : Deleted",
+    "  →         : Renamed",
+    "  ✓         : In Commit",
     "",
     "Press any key to close this help",
   }

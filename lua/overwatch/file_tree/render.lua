@@ -96,6 +96,24 @@ function M.render_tree(tree, buffer)
     "  " .. header_text,
   }
 
+  -- Add commit info in history mode
+  local global_state = require("overwatch.state")
+  if global_state.is_history_mode() and tree_state.current_commit then
+    local short_hash = tree_state.current_commit:sub(1, 8)
+    local commit_line = "  Commit: " .. short_hash
+    if tree_state.commit_message then
+      -- Truncate long commit messages
+      local msg = tree_state.commit_message
+      local max_len = 40
+      if #msg > max_len then
+        msg = msg:sub(1, max_len - 3) .. "..."
+      end
+      commit_line = commit_line .. " - " .. msg
+    end
+    table.insert(header_lines, commit_line)
+    table.insert(header_lines, "  [h] older  [l] newer")
+  end
+
   -- === Collect, Filter, Group, and Sort Files ===
   local all_files = collect_and_filter_files(tree.root, tree_state.diff_only)
   local grouped_files = {}
@@ -387,6 +405,12 @@ function M.render_tree(tree, buffer)
 
   -- Add highlighting for the main header
   vim.api.nvim_buf_add_highlight(buffer, ns_id, "Title", 0, 0, -1) -- Header path
+
+  -- Add highlighting for history mode lines if present
+  if global_state.is_history_mode() and tree_state.current_commit then
+    vim.api.nvim_buf_add_highlight(buffer, ns_id, "Comment", 1, 0, -1) -- Commit line
+    vim.api.nvim_buf_add_highlight(buffer, ns_id, "NonText", 2, 0, -1) -- Navigation hints
+  end
 
   -- Add highlighting for repository status line (line 1, 0-based)
   local status_line_content = lines[2] -- 1-based index

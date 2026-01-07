@@ -7,6 +7,10 @@ local M = {
   root_path = nil, -- The root path used to generate the current tree
   diff_only = false, -- Whether the tree is currently showing only diffs
   submodules = {}, -- Array of submodule data: {path, status, sha, dirty, changed_files, tree}
+  -- History mode state
+  current_commit = nil, -- The commit hash currently being viewed
+  parent_commit = nil, -- Parent of current_commit (for computing diff)
+  commit_message = nil, -- Short commit message for display
 }
 
 function M.reset_state()
@@ -18,6 +22,9 @@ function M.reset_state()
   M.root_path = nil
   M.diff_only = false
   M.submodules = {}
+  M.current_commit = nil
+  M.parent_commit = nil
+  M.commit_message = nil
 end
 
 return M

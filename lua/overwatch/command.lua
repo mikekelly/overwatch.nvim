@@ -75,12 +75,31 @@ function M.reset()
     state.auto_refresh_augroup = nil
   end
 
+  -- Clear history state
+  state.reset_history()
+
+  -- Clear hunk view buffer
+  local hunk_view = require("overwatch.hunk_view")
+  hunk_view.clear()
+
+  -- Clear file tree state
+  local tree_state = require("overwatch.file_tree.state")
+  tree_state.reset_state()
+
   local windows = vim.api.nvim_list_wins()
   if not state.file_tree_win or not vim.api.nvim_win_is_valid(state.file_tree_win) then
+    state.file_tree_win = nil
+    state.file_tree_buf = nil
+    state.main_win = nil
+    state.set_active(false)
     return
   end
 
   if #windows == 1 then
+    state.file_tree_win = nil
+    state.file_tree_buf = nil
+    state.main_win = nil
+    state.set_active(false)
     return
   end
 

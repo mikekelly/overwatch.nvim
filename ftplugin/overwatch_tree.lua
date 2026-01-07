@@ -18,6 +18,8 @@ vim.wo.wrap = false
 vim.api.nvim_set_hl(0, "CursorLine", { bg = "#3b4261" })
 
 local actions = require('overwatch.file_tree.actions')
+local history = require('overwatch.history')
+local state = require('overwatch.state')
 
 -- Navigation keys auto-preview the file (move cursor AND open file)
 vim.keymap.set("n", "j", function()
@@ -48,8 +50,18 @@ vim.keymap.set("n", "?", function()
   actions.show_help()
 end, { noremap = true, silent = true, buffer = true })
 
+-- h: Navigate to older commit (enter history mode or go further back)
+vim.keymap.set("n", "h", function()
+  history.navigate_older()
+end, { noremap = true, silent = true, buffer = true })
+
+-- l: Navigate to newer commit (if in history mode) OR open file (if in working tree mode)
 vim.keymap.set("n", "l", function()
-  actions.toggle_node()
+  if state.is_history_mode() then
+    history.navigate_newer()
+  else
+    actions.toggle_node()
+  end
 end, { noremap = true, silent = true, buffer = true })
 
 -- Enter opens file and moves focus to the buffer

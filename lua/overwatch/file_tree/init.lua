@@ -280,6 +280,80 @@ function M.show(commit_hash)
   return true
 end
 
+-- Show files changed in a specific historical commit (history mode)
+-- @param commit_hash string - the commit to show
+-- @param parent_hash string|nil - parent commit (nil for root commits)
+function M.show_history_commit(commit_hash, parent_hash)
+  local tree_state = require("overwatch.file_tree.state")
+  local file_path = vim.fn.getcwd()
+  local diff_only = true
+
+  -- Check if tree window already exists and is valid
+  if
+    tree_state.window
+    and vim.api.nvim_win_is_valid(tree_state.window)
+    and tree_state.buffer
+    and vim.api.nvim_buf_is_valid(tree_state.buffer)
+  then
+    -- Reuse existing buffer and window
+    local tree = FileTree.new(file_path)
+    local buf = tree_state.buffer
+
+    -- Update git status with parent-commit diff
+    tree:update_git_status(file_path, diff_only, commit_hash, function()
+      vim.schedule(function()
+        if not vim.api.nvim_buf_is_valid(buf) then
+          return
+        end
+
+        render.render_tree(tree, buf)
+
+        local win = tree_state.window
+        if not win or not vim.api.nvim_win_is_valid(win) then
+          return
+        end
+
+        -- Position cursor on first file
+        position_cursor_on_first_file(buf, win)
+
+        -- Auto-open first file
+        local first_node
+        local line_count = vim.api.nvim_buf_line_count(buf)
+        for i = 3, line_count - 1 do
+          local n = tree_state.line_to_node[i]
+          if n and not n.is_dir then
+            first_node = n
+            break
+          end
+        end
+        if first_node then
+          actions.open_file_node(first_node)
+        end
+
+        -- Resize window to fit content
+        local width_config = config.values.file_tree.width
+        local screen_width = vim.o.columns
+        local max_width = math.floor(screen_width * width_config.max_percent / 100)
+        local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        local max_line_width = 0
+        for _, line in ipairs(lines) do
+          local display_width = vim.fn.strdisplaywidth(line)
+          if display_width > max_line_width then
+            max_line_width = display_width
+          end
+        end
+        local optimal_width = math.max(width_config.min, math.min(max_line_width + width_config.padding, max_width))
+        vim.api.nvim_win_set_width(win, optimal_width)
+      end)
+    end, parent_hash)
+
+    return true
+  end
+
+  -- Tree window doesn't exist, create it
+  return M.show(commit_hash)
+end
+
 -- Expose actions for keymaps setup elsewhere if needed (though direct require is preferred)
 M.actions = actions
 

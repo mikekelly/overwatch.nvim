@@ -3,6 +3,10 @@ local M = {}
 local m = {
   commit_base = nil,
   active = false,
+  -- History navigation state
+  history_mode = false, -- true when browsing commit history
+  history_stack = {}, -- commits navigated to (for going forward with 'l')
+  history_index = 0, -- current position in history_stack (1-based)
 }
 
 -- Main window reference
@@ -57,6 +61,55 @@ function M.set_active(val)
 end
 function M.is_active()
   return m.active
+end
+
+-- History mode functions
+function M.is_history_mode()
+  return m.history_mode
+end
+
+function M.set_history_mode(val)
+  m.history_mode = not not val
+end
+
+function M.get_history_stack()
+  return m.history_stack
+end
+
+function M.get_history_index()
+  return m.history_index
+end
+
+-- Push a commit onto the history stack (when navigating older)
+function M.push_history(commit_hash)
+  m.history_index = m.history_index + 1
+  m.history_stack[m.history_index] = commit_hash
+  -- Truncate any forward history
+  for i = m.history_index + 1, #m.history_stack do
+    m.history_stack[i] = nil
+  end
+end
+
+-- Pop from history (when navigating newer), returns the commit to show
+function M.pop_history()
+  if m.history_index <= 1 then
+    return nil
+  end
+  m.history_index = m.history_index - 1
+  return m.history_stack[m.history_index]
+end
+
+function M.get_current_history_commit()
+  if m.history_index > 0 then
+    return m.history_stack[m.history_index]
+  end
+  return nil
+end
+
+function M.reset_history()
+  m.history_mode = false
+  m.history_stack = {}
+  m.history_index = 0
 end
 
 return M
