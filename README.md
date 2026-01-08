@@ -1,6 +1,6 @@
 # overwatch.nvim
 
-A Neovim plugin for copiloting with AI coding agents. Provides a real-time UI for reviewing unstaged changes as they happen, plus the ability to browse through commit history—all without leaving the editor.
+A Neovim plugin for collaborating with AI coding agents, following their work in real time. Review unstaged changes as they happen and browse commit history—all without leaving the editor.
 
 ![Overwatch demo](demo.gif)
 
