@@ -2,6 +2,8 @@
 
 A Neovim plugin for copiloting with AI coding agents. Provides a real-time UI for reviewing unstaged changes as they happen, plus the ability to browse through commit history—all without leaving the editor.
 
+![Overwatch demo](demo.gif)
+
 Fork of [unified.nvim](https://github.com/axkirillov/unified.nvim) with enhanced file tree navigation.
 
 ## Features

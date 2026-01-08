@@ -136,6 +136,18 @@ function M.refresh(force)
 
     if first_node then
       vim.api.nvim_win_set_cursor(win, { first_line + 1, 0 })
+    else
+      -- No files in tree - blank the main buffer
+      local global_state = require("overwatch.state")
+      local main_win = global_state.get_main_window()
+      if main_win and vim.api.nvim_win_is_valid(main_win) then
+        -- Create a scratch buffer to display in the main window
+        local scratch = vim.api.nvim_create_buf(false, true)
+        vim.bo[scratch].buftype = "nofile"
+        vim.bo[scratch].bufhidden = "wipe"
+        vim.bo[scratch].swapfile = false
+        vim.api.nvim_win_set_buf(main_win, scratch)
+      end
     end
 
     -- Resize window to fit content
