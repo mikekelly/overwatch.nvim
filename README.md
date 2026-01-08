@@ -6,22 +6,25 @@ A Neovim plugin for displaying inline unified diffs directly in your buffer. For
 
 * **Inline Diffs**: View git diffs directly in your buffer, without needing a separate window.
 * **File Tree Explorer**: A file tree explorer showing changed files with status icons.
+* **History Navigation**: Browse commit history with `h`/`l` keys to see what changed in previous commits.
+* **Hunk Actions**: Stage, unstage, or revert individual hunks without leaving the editor.
 * **Auto-preview on Navigation**: Moving through files in the tree automatically previews the diff.
-* **Auto-refresh File Tree**: The file tree automatically refreshes when git status changes (polls every 2 seconds).
+* **Auto-refresh**: Both the file tree and diff view automatically refresh when changes are detected.
 * **Submodule Support**: Optionally display changed files in git submodules.
 * **Git Gutter Signs**: Gutter signs indicate added, modified, and deleted lines.
 * **Cursor Line Highlighting**: Grey background highlights the selected line in the file tree.
 * **Customizable**: Configure signs, highlights, and line symbols to your liking.
-* **Auto-refresh Diff**: The diff view automatically refreshes as you make changes to the buffer.
 
 ## What's Different from unified.nvim?
 
 1. **Auto-preview**: `j`/`k` navigation in the file tree automatically opens and previews the file diff
-2. **Auto-refresh file tree**: The file tree polls git status and refreshes when changes are detected
-3. **Submodule support**: Optionally shows changed files within git submodules
-4. **Improved status icons**: Uses visual icons (`+`, `󰏫`, `−`) instead of letters for file status
-5. **Enter to focus**: Press `<CR>` to open a file and move cursor into the main buffer
-6. **Cursor line highlighting**: Selected line in file tree has grey background for visibility
+2. **History navigation**: Browse through commit history with `h`/`l` keys directly from the file tree
+3. **Auto-refresh file tree**: The file tree polls git status and refreshes when changes are detected
+4. **Submodule support**: Optionally shows changed files within git submodules
+5. **Hunk actions**: Stage, unstage, or revert individual hunks via API
+6. **Improved status icons**: Uses visual icons (`+`, `󰏫`, `−`) instead of letters for file status
+7. **Enter to focus**: Press `<CR>` to open a file and move cursor into the main buffer
+8. **Cursor line highlighting**: Selected line in file tree has grey background for visibility
 
 ## Requirements
 
@@ -106,14 +109,27 @@ require('overwatch').setup({
 
 When the file tree is open, you can use the following keymaps:
 
-  * `j`/`k` or `<Down>`/`<Up>`: Move between files and **automatically preview** the diff.
-  * `<CR>` (Enter): Open the file and **move cursor into the main buffer**.
-  * `l`: Open the file under the cursor (keeps focus in tree).
-  * `q`: Close the file tree window.
-  * `R`: Manually refresh the file tree.
-  * `?`: Show a help dialog.
+| Key | Action |
+|-----|--------|
+| `j`/`k` or `↓`/`↑` | Move between files and **automatically preview** the diff |
+| `<CR>` (Enter) | Open the file and **move cursor into the main buffer** |
+| `l` | Open the file under cursor (keeps focus in tree), or navigate forward in history |
+| `h` | Navigate back through commit history |
+| `q` | Close the file tree window |
+| `R` | Manually refresh the file tree |
+| `?` | Show a help dialog |
 
 When the file tree opens, the first file is automatically opened in the main window.
+
+### History Navigation
+
+Overwatch lets you browse through commit history directly from the file tree:
+
+1. Press `h` to go back in time — view files changed in older commits
+2. Press `l` to go forward — return to more recent commits
+3. When you reach the most recent point, `l` exits history mode and returns to the working tree
+
+This is useful for reviewing what changed in previous commits without leaving the editor.
 
 The file tree displays the Git status of each file with icons:
 

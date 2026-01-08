@@ -271,6 +271,11 @@ function M.show(commit_hash)
   local tree_win = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(tree_win, tree_buf)
 
+  -- Set window-local options (ftplugin runs before window exists)
+  vim.wo[tree_win].number = false
+  vim.wo[tree_win].relativenumber = false
+  vim.wo[tree_win].signcolumn = "no"
+
   -- Store window reference in tree state and global state
   tree_state.window = tree_win
   global_state.file_tree_win = tree_win
