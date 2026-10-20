@@ -65,8 +65,9 @@ function Job.await(cmd, opts)
   end
 
   local caller_co = coroutine.running()
-  -- If we're not inside a coroutine, run the command synchronously (blocking)
-  if not caller_co then
+  -- If we can't yield (not in a coroutine, or behind a C boundary such as an
+  -- autocmd callback), run the command synchronously (blocking)
+  if not caller_co or not coroutine.isyieldable() then
     local exec_cmd = type(cmd) == "table" and table.concat(vim.tbl_map(vim.fn.shellescape, cmd), " ") or cmd
     local out = vim.fn.system(exec_cmd)
     local code = vim.v.shell_error
